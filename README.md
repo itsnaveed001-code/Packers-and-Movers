@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Packers Go Movers — booking website
 
 Production-ready Next.js 15 site for a packers-and-movers business in India with slot-based online booking. No online payment — owner confirms bookings by phone; payment is collected on the day of service.
@@ -90,3 +91,6 @@ Phone, WhatsApp, address, and other display values live in `lib/constants.ts`. U
 ## License
 
 Private — for use by Packers Go Movers.
+=======
+# Packers-and-Movers
+>>>>>>> 6ca1a3ed9bbe92ec00ee018bf9c0b3c3d0b70189
