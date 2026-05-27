@@ -1,0 +1,64 @@
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { BookingFlow } from '@/components/booking/BookingFlow';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
+import { getActiveServices } from '@/lib/queries';
+
+export const metadata: Metadata = {
+  title: 'Book your move',
+  description:
+    'Book your packers and movers slot online. Choose your service, date, time, and we will call you within 2 hours to confirm.',
+};
+
+export const dynamic = 'force-dynamic';
+
+async function getAvailability() {
+  const supabase = createSupabaseAdminClient();
+  const [settingsRes, blockedRes] = await Promise.all([
+    supabase.from('availability_settings').select('*').maybeSingle(),
+    supabase
+      .from('blocked_dates')
+      .select('date')
+      .gte('date', new Date().toISOString().slice(0, 10)),
+  ]);
+  return {
+    workingDays: settingsRes.data?.working_days ?? [1, 2, 3, 4, 5, 6],
+    advanceBookingDays: settingsRes.data?.advance_booking_days ?? 60,
+    blockedDates: (blockedRes.data ?? []).map((b) => b.date),
+  };
+}
+
+export default async function BookPage() {
+  const [services, availability] = await Promise.all([
+    getActiveServices(),
+    getAvailability(),
+  ]);
+
+  return (
+    <section className="bg-secondary/40 py-8 sm:py-12">
+      <div className="container">
+        <div className="mx-auto mb-6 max-w-3xl text-center">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Book your move</h1>
+          <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+            Five quick steps. No payment now — pay on the day of service.
+          </p>
+        </div>
+        {services.length === 0 ? (
+          <p className="mx-auto max-w-3xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Booking is temporarily unavailable. Please call or WhatsApp us instead.
+          </p>
+        ) : (
+          <Suspense
+            fallback={
+              <p className="mx-auto max-w-3xl text-center text-sm text-muted-foreground">
+                Loading…
+              </p>
+            }
+          >
+            <BookingFlow services={services} availability={availability} />
+          </Suspense>
+        )}
+      </div>
+    </section>
+  );
+}

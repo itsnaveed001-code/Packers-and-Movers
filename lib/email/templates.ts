@@ -1,0 +1,138 @@
+import { BUSINESS } from '@/lib/constants';
+import { formatTimeLabel } from '@/lib/utils';
+
+const BRAND = '#1e40af';
+const BG = '#f1f5f9';
+const TEXT = '#0f172a';
+const MUTED = '#64748b';
+
+function shell(inner: string): string {
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:24px 12px;background:${BG};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${TEXT};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+    <tr><td style="background:${BRAND};padding:20px 24px;color:#ffffff;font-size:18px;font-weight:600;">${BUSINESS.name}</td></tr>
+    <tr><td style="padding:24px;">${inner}</td></tr>
+    <tr><td style="padding:16px 24px;background:${BG};color:${MUTED};font-size:12px;text-align:center;">
+      ${BUSINESS.name} · ${BUSINESS.phone} · <a href="${BUSINESS.siteUrl}" style="color:${BRAND};text-decoration:none;">${BUSINESS.domain}</a>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function row(label: string, value: string): string {
+  return `<tr><td style="padding:8px 0;color:${MUTED};font-size:13px;width:140px;vertical-align:top;">${label}</td><td style="padding:8px 0;font-size:14px;color:${TEXT};">${value}</td></tr>`;
+}
+
+type BookingEmailData = {
+  reference_code: string;
+  service_name: string;
+  booking_date: string; // YYYY-MM-DD
+  booking_time: string; // HH:MM
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  pickup_address: string;
+  pickup_city: string;
+  pickup_pincode: string;
+  dropoff_address: string;
+  dropoff_city: string;
+  dropoff_pincode: string;
+  notes?: string | null;
+};
+
+function formatDate(yyyyMmDd: string): string {
+  const [y, m, d] = yyyyMmDd.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.toLocaleDateString('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+export function adminNotificationEmail(data: BookingEmailData): { subject: string; html: string } {
+  const subject = `New booking — ${data.reference_code} — ${data.service_name} on ${formatDate(data.booking_date)}`;
+  const adminUrl = `${BUSINESS.siteUrl}/admin`;
+  const inner = `
+    <h2 style="margin:0 0 4px;font-size:18px;color:${TEXT};">New booking received</h2>
+    <p style="margin:0 0 16px;color:${MUTED};font-size:14px;">Reference <strong style="color:${TEXT};">${data.reference_code}</strong></p>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #e2e8f0;margin-top:8px;">
+      ${row('Service', data.service_name)}
+      ${row('Date', formatDate(data.booking_date))}
+      ${row('Time', formatTimeLabel(data.booking_time))}
+      ${row('Customer', data.customer_name)}
+      ${row('Phone', `<a href="tel:${data.customer_phone}" style="color:${BRAND};">${data.customer_phone}</a>`)}
+      ${row('Email', `<a href="mailto:${data.customer_email}" style="color:${BRAND};">${data.customer_email}</a>`)}
+      ${row('Pickup', `${data.pickup_address}, ${data.pickup_city} – ${data.pickup_pincode}`)}
+      ${row('Drop-off', `${data.dropoff_address}, ${data.dropoff_city} – ${data.dropoff_pincode}`)}
+      ${data.notes ? row('Notes', data.notes) : ''}
+    </table>
+
+    <p style="margin:20px 0 0;">
+      <a href="${adminUrl}" style="display:inline-block;background:${BRAND};color:#ffffff;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:500;">View in admin</a>
+    </p>
+    <p style="margin:16px 0 0;color:${MUTED};font-size:13px;">Please call the customer within 2 hours to confirm.</p>
+  `;
+  return { subject, html: shell(inner) };
+}
+
+export function customerConfirmationEmail(data: BookingEmailData): {
+  subject: string;
+  html: string;
+} {
+  const subject = `Booking received — ${BUSINESS.name} (${data.reference_code})`;
+  const inner = `
+    <h2 style="margin:0 0 6px;font-size:18px;color:${TEXT};">Thank you, ${data.customer_name.split(' ')[0]}!</h2>
+    <p style="margin:0 0 16px;color:${MUTED};font-size:14px;">We've received your booking request. Your reference code is:</p>
+
+    <div style="text-align:center;background:${BG};border:1px dashed ${BRAND};border-radius:10px;padding:18px;margin:0 0 18px;">
+      <div style="font-family:'SF Mono',Menlo,monospace;font-size:24px;font-weight:700;color:${BRAND};letter-spacing:1px;">${data.reference_code}</div>
+    </div>
+
+    <p style="margin:0 0 12px;font-size:14px;">
+      <strong>What happens next:</strong> Our team will call you within 2 hours on
+      <a href="tel:${data.customer_phone}" style="color:${BRAND};">${data.customer_phone}</a>
+      to confirm your booking and walk you through the details.
+    </p>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #e2e8f0;margin-top:8px;">
+      ${row('Service', data.service_name)}
+      ${row('Date', formatDate(data.booking_date))}
+      ${row('Time', formatTimeLabel(data.booking_time))}
+      ${row('Pickup', `${data.pickup_city} – ${data.pickup_pincode}`)}
+      ${row('Drop-off', `${data.dropoff_city} – ${data.dropoff_pincode}`)}
+    </table>
+
+    <p style="margin:20px 0 0;font-size:14px;">
+      Need to reach us sooner? Call
+      <a href="tel:${BUSINESS.phone}" style="color:${BRAND};">${BUSINESS.phone}</a>
+      or WhatsApp us at
+      <a href="https://wa.me/${BUSINESS.whatsapp}" style="color:${BRAND};">+${BUSINESS.whatsapp}</a>.
+    </p>
+    <p style="margin:16px 0 0;color:${MUTED};font-size:12px;">Please save this email — we'll ask for your reference code.</p>
+  `;
+  return { subject, html: shell(inner) };
+}
+
+export function contactFormEmail(data: {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+}): { subject: string; html: string } {
+  const subject = `New enquiry from ${data.name}`;
+  const inner = `
+    <h2 style="margin:0 0 12px;font-size:18px;color:${TEXT};">New contact form submission</h2>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+      ${row('Name', data.name)}
+      ${row('Phone', `<a href="tel:${data.phone}" style="color:${BRAND};">${data.phone}</a>`)}
+      ${row('Email', `<a href="mailto:${data.email}" style="color:${BRAND};">${data.email}</a>`)}
+      ${row('Message', data.message.replace(/\n/g, '<br/>'))}
+    </table>
+  `;
+  return { subject, html: shell(inner) };
+}
