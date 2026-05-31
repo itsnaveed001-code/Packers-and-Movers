@@ -12,20 +12,41 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
-async function getAvailability() {
-  const supabase = createSupabaseAdminClient();
-  const [settingsRes, blockedRes] = await Promise.all([
-    supabase.from('availability_settings').select('*').maybeSingle(),
-    supabase
-      .from('blocked_dates')
-      .select('date')
-      .gte('date', new Date().toISOString().slice(0, 10)),
-  ]);
-  return {
-    workingDays: settingsRes.data?.working_days ?? [1, 2, 3, 4, 5, 6],
-    advanceBookingDays: settingsRes.data?.advance_booking_days ?? 60,
-    blockedDates: (blockedRes.data ?? []).map((b) => b.date),
-  };
+type Availability = {
+  workingDays: number[];
+  advanceBookingDays: number;
+  blockedDates: string[];
+};
+
+const DEFAULT_AVAILABILITY: Availability = {
+  workingDays: [1, 2, 3, 4, 5, 6],
+  advanceBookingDays: 60,
+  blockedDates: [],
+};
+
+async function getAvailability(): Promise<Availability> {
+  // Never let a Supabase/env failure crash the whole /book route. If the
+  // database is unreachable we fall back to sensible defaults; the page then
+  // degrades gracefully instead of throwing a server-side exception.
+  try {
+    const supabase = createSupabaseAdminClient();
+    const [settingsRes, blockedRes] = await Promise.all([
+      supabase.from('availability_settings').select('*').maybeSingle(),
+      supabase
+        .from('blocked_dates')
+        .select('date')
+        .gte('date', new Date().toISOString().slice(0, 10)),
+    ]);
+    return {
+      workingDays: settingsRes.data?.working_days ?? DEFAULT_AVAILABILITY.workingDays,
+      advanceBookingDays:
+        settingsRes.data?.advance_booking_days ?? DEFAULT_AVAILABILITY.advanceBookingDays,
+      blockedDates: (blockedRes.data ?? []).map((b) => b.date),
+    };
+  } catch (err) {
+    console.error('[book] getAvailability failed, using defaults:', err);
+    return DEFAULT_AVAILABILITY;
+  }
 }
 
 export default async function BookPage() {
