@@ -17,25 +17,27 @@ const config: Config = {
     },
     extend: {
       colors: {
+        // Navy brand scale derived from the logo (#0E1A3D). Orange stays in the
+        // logo only — it is intentionally not part of the UI palette.
         brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#1e40af',
-          700: '#1e3a8a',
-          800: '#172554',
-          900: '#0f172a',
+          50: '#f2f6fb',
+          100: '#e4ebf5',
+          200: '#c6d4e8',
+          300: '#9db3d4',
+          400: '#6d8bba',
+          500: '#46679c',
+          600: '#2f4d82',
+          700: '#21396a',
+          800: '#16284d',
+          900: '#0E1A3D',
         },
         border: 'hsl(214 32% 91%)',
         input: 'hsl(214 32% 91%)',
-        ring: 'hsl(221 83% 53%)',
+        ring: 'hsl(220 53% 42%)',
         background: 'hsl(0 0% 100%)',
         foreground: 'hsl(222 47% 11%)',
         primary: {
-          DEFAULT: '#1e40af',
+          DEFAULT: '#21396a',
           foreground: '#ffffff',
         },
         secondary: {

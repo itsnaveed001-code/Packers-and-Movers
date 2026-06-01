@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { contactFormSchema } from '@/lib/validation';
+import { BUSINESS } from '@/lib/constants';
 import { sendEmail } from '@/lib/email/send';
 import { contactFormEmail } from '@/lib/email/templates';
 
@@ -22,11 +23,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) {
-    console.error('[contact] ADMIN_EMAIL not set — message dropped');
-    return NextResponse.json({ ok: true }); // don't leak config to user
-  }
+  const adminEmail = process.env.ADMIN_EMAIL || BUSINESS.email;
 
   const t = contactFormEmail(parsed.data);
   const sent = await sendEmail({

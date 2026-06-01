@@ -3,13 +3,13 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, Phone, MessageCircle, Copy } from 'lucide-react';
+import { CheckCircle2, Phone, MessageCircle, Copy, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
 import { formatTimeLabel, telUrl, whatsappUrl } from '@/lib/utils';
-import { STATUS_LABELS } from '@/lib/constants';
+import { STATUS_LABELS, BUSINESS } from '@/lib/constants';
 
 type LookupBody = {
   reference_code: string;
@@ -54,6 +54,78 @@ export function BookingConfirmedView() {
       show({ variant: 'success', title: 'Copied reference code' });
     } catch {
       show({ variant: 'error', title: "Couldn't copy — please write it down" });
+    }
+  }
+
+  async function downloadReceipt() {
+    if (!ref) return;
+    try {
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+      const left = 48;
+      let y = 64;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(14, 26, 61); // brand navy #0E1A3D
+      doc.text(BUSINESS.name, left, y);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      doc.setTextColor(100, 116, 139);
+      y += 20;
+      doc.text('Booking receipt', left, y);
+
+      y += 16;
+      doc.setDrawColor(226, 232, 240);
+      doc.line(left, y, 547, y);
+
+      y += 34;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(14, 26, 61);
+      doc.text(`Reference: ${ref}`, left, y);
+
+      const d = state.kind === 'ok' ? state.data : null;
+      const rows: [string, string][] = [
+        ['Service', d?.service?.name ?? '—'],
+        [
+          'Date',
+          d
+            ? new Date(d.booking_date).toLocaleDateString('en-IN', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })
+            : '—',
+        ],
+        ['Time', d ? formatTimeLabel(d.booking_time) : '—'],
+        ['Route', d ? `${d.pickup_city} to ${d.dropoff_city}` : '—'],
+        ['Status', d ? STATUS_LABELS[d.status] : 'Pending'],
+      ];
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      rows.forEach(([k, v]) => {
+        y += 26;
+        doc.setTextColor(100, 116, 139);
+        doc.text(k, left, y);
+        doc.setTextColor(15, 23, 42);
+        doc.text(v, left + 130, y);
+      });
+
+      y += 44;
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text('No payment was taken online — pay on the day of service.', left, y);
+      y += 16;
+      doc.text(`Questions? Call ${BUSINESS.phone} or message us on WhatsApp.`, left, y);
+
+      doc.save(`${BUSINESS.name}-Booking-${ref}.pdf`);
+      show({ variant: 'success', title: 'Receipt downloaded' });
+    } catch {
+      show({ variant: 'error', title: 'Could not generate the receipt' });
     }
   }
 
@@ -102,6 +174,10 @@ export function BookingConfirmedView() {
             <strong>What happens next:</strong> Our team will call you within 2 hours to
             confirm your booking and walk through the details.
           </div>
+
+          <Button onClick={downloadReceipt} variant="outline" className="w-full gap-2">
+            <Download className="h-4 w-4" /> Download receipt (PDF)
+          </Button>
 
           {state.kind === 'loading' && (
             <div className="space-y-3">

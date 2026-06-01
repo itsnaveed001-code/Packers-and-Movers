@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Lock, MessageCircle } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -10,7 +10,8 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { getServiceBySlug } from '@/lib/queries';
-import { formatINR } from '@/lib/utils';
+import { formatINR, whatsappUrl } from '@/lib/utils';
+import { isComingSoon, HOUSE_SHIFTING_TIERS, PRIMARY_CITY } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,7 +113,7 @@ const FAQS_BY_SLUG: Record<string, { q: string; a: string }[]> = {
     },
     {
       q: 'How long does intercity transport take?',
-      a: 'Mumbai–Pune is typically 1–2 days. Longer routes vary — we share a delivery window before booking.',
+      a: 'Bengaluru to a nearby city is typically 1–2 days. Longer routes vary — we share a delivery window before booking.',
     },
     {
       q: 'Is the vehicle insured during transit?',
@@ -174,6 +175,8 @@ export default async function ServiceDetailPage({
 
   const includes = INCLUDED_BY_SLUG[service.slug] ?? [];
   const faqs = FAQS_BY_SLUG[service.slug] ?? [];
+  const soon = isComingSoon(service.slug);
+  const tiers = service.slug === 'home-shifting' ? HOUSE_SHIFTING_TIERS : [];
 
   return (
     <>
@@ -187,22 +190,84 @@ export default async function ServiceDetailPage({
             {service.description}
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button asChild size="lg" className="gap-2">
-              <Link href={`/book?service=${service.slug}`}>
-                Book this service <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <p className="text-sm text-muted-foreground">
-              Starting from <span className="font-semibold text-foreground">{formatINR(service.base_price)}</span>
-            </p>
+            {soon ? (
+              <>
+                <span className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-sm font-medium text-muted-foreground">
+                  <Lock className="h-4 w-4" /> Coming soon to {PRIMARY_CITY}
+                </span>
+                <Button asChild size="lg" variant="whatsapp" className="gap-2">
+                  <a
+                    href={whatsappUrl(`Hi! Please notify me when ${service.name} is available.`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="h-4 w-4" /> Notify me
+                  </a>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild size="lg" className="gap-2">
+                  <Link href={`/book?service=${service.slug}`}>
+                    Book this service <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+                {service.base_price != null && (
+                  <p className="text-sm text-muted-foreground">
+                    Starting from{' '}
+                    <span className="font-semibold text-foreground">
+                      {formatINR(service.base_price)}
+                    </span>
+                  </p>
+                )}
+              </>
+            )}
           </div>
         </div>
       </section>
 
+      {tiers.length > 0 && (
+        <section className="py-12">
+          <div className="container max-w-3xl">
+            <h2 className="text-2xl font-bold tracking-tight">Indicative pricing</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Starting prices by home size. Final price depends on distance, floor,
+              and the exact items — we confirm a fixed quote before you pay.
+            </p>
+            <div className="mt-5 overflow-hidden rounded-2xl border">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/60 text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Home size</th>
+                    <th className="px-4 py-3 font-semibold">Starting from</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tiers.map((t) => (
+                    <tr key={t.label} className="border-t">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-foreground">{t.label}</p>
+                        <p className="text-xs text-muted-foreground">{t.note}</p>
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-brand-700">
+                        ₹{t.priceFrom.toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              * Indicative starting prices. You&apos;ll get an exact quote on a quick call.
+            </p>
+          </div>
+        </section>
+      )}
+
       {includes.length > 0 && (
         <section className="py-12">
           <div className="container max-w-3xl">
-            <h2 className="text-2xl font-bold tracking-tight">What's included</h2>
+            <h2 className="text-2xl font-bold tracking-tight">What&apos;s included</h2>
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               {includes.map((item) => (
                 <li key={item} className="flex items-start gap-2 text-sm">
@@ -235,15 +300,37 @@ export default async function ServiceDetailPage({
 
       <section className="py-12">
         <div className="container max-w-3xl text-center">
-          <h2 className="text-2xl font-bold tracking-tight">
-            Ready to book your {service.name.toLowerCase()}?
-          </h2>
-          <p className="mt-2 text-muted-foreground">It takes less than a minute.</p>
-          <Button asChild size="lg" className="mt-5 gap-2">
-            <Link href={`/book?service=${service.slug}`}>
-              Book now <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          {soon ? (
+            <>
+              <h2 className="text-2xl font-bold tracking-tight">
+                {service.name} is launching soon in {PRIMARY_CITY}
+              </h2>
+              <p className="mt-2 text-muted-foreground">
+                Want it sooner? Message us and we&apos;ll prioritise your area.
+              </p>
+              <Button asChild size="lg" variant="whatsapp" className="mt-5 gap-2">
+                <a
+                  href={whatsappUrl(`Hi! Please notify me when ${service.name} is available.`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="h-4 w-4" /> Notify me on WhatsApp
+                </a>
+              </Button>
+            </>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold tracking-tight">
+                Ready to book your {service.name.toLowerCase()}?
+              </h2>
+              <p className="mt-2 text-muted-foreground">It takes less than a minute.</p>
+              <Button asChild size="lg" className="mt-5 gap-2">
+                <Link href={`/book?service=${service.slug}`}>
+                  Book now <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
       </section>
     </>

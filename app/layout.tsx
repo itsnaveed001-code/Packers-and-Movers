@@ -13,22 +13,22 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(BUSINESS.siteUrl),
   title: {
-    default: `${BUSINESS.name} — Trusted Packers and Movers in India`,
+    default: `${BUSINESS.name} — Packers and Movers in Bengaluru`,
     template: `%s · ${BUSINESS.name}`,
   },
   description:
-    'Professional packers and movers offering home shifting, office relocation, vehicle transport, and storage. Insured, on-time, transparent pricing. Book online.',
+    'Professional packers and movers in Bengaluru offering home shifting, office relocation, and local moves. Insured, on-time, transparent pricing. Book online.',
   applicationName: BUSINESS.name,
   authors: [{ name: BUSINESS.name }],
   keywords: [
-    'packers and movers',
-    'home shifting',
-    'office shifting',
-    'vehicle transport',
-    'movers in Mumbai',
-    'movers in Pune',
-    'intercity moves',
-    'storage',
+    'packers and movers Bengaluru',
+    'packers and movers Bangalore',
+    'home shifting Bengaluru',
+    'office shifting Bangalore',
+    'house shifting',
+    'local movers Bangalore',
+    'BHK shifting',
+    '2 BHK shifting Bangalore',
   ],
   openGraph: {
     type: 'website',
@@ -37,13 +37,13 @@ export const metadata: Metadata = {
     siteName: BUSINESS.name,
     title: `${BUSINESS.name} — Trusted Packers and Movers`,
     description:
-      'Insured, on-time home and office relocations across India. Book your slot online.',
+      'Insured, on-time home and office relocations in Bengaluru. Book your slot online.',
   },
   twitter: {
     card: 'summary_large_image',
     title: `${BUSINESS.name} — Trusted Packers and Movers`,
     description:
-      'Insured, on-time home and office relocations across India. Book your slot online.',
+      'Insured, on-time home and office relocations in Bengaluru. Book your slot online.',
   },
   robots: {
     index: true,

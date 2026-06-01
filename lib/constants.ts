@@ -2,52 +2,101 @@
 // Phone numbers, WhatsApp, and office address MUST be updated to real values.
 
 export const BUSINESS = {
-  name: process.env.NEXT_PUBLIC_BUSINESS_NAME || 'Packers Go Movers',
-  // TODO(owner): replace with real business phone (E.164 format)
-  phone: process.env.NEXT_PUBLIC_BUSINESS_PHONE || '+91 98765 43210',
-  // TODO(owner): replace with real WhatsApp number (digits only, country code + number)
-  whatsapp: process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || '919876543210',
-  email: 'hello@packersgomovers.com',
-  // TODO(owner): replace with real office address
-  address: 'Andheri East, Mumbai, Maharashtra 400069, India',
-  domain: 'packersgomovers.com',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://packersgomovers.com',
-  tagline: 'Stress-free packing and moving across India',
-  gst: '27ABCDE1234F1Z5', // TODO(owner): replace with real GST number or remove
+  name: process.env.NEXT_PUBLIC_BUSINESS_NAME || 'EasyShiftX',
+  phone: process.env.NEXT_PUBLIC_BUSINESS_PHONE || '+91 90605 33477',
+  // WhatsApp: digits only, country code + number (used in wa.me links)
+  whatsapp: process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || '919060533477',
+  email: process.env.NEXT_PUBLIC_BUSINESS_EMAIL || 'mazherkhan.2415@gmail.com',
+  // TODO(owner): replace with real office address in Bengaluru
+  address: 'Bengaluru, Karnataka, India',
+  domain: 'easyshiftx.com',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://packersandmovers-phi.vercel.app',
+  tagline: 'Stress-free packing and moving in Bengaluru',
+  // gst left blank until verified — do not display unverified info
+  gst: '',
 } as const;
 
-export const CITIES = ['Mumbai', 'Pune', 'Thane', 'Navi Mumbai'] as const;
-export const PRIMARY_CITY = CITIES[0];
+// Single operating city for now (Bengaluru only).
+export const CITY = 'Bengaluru';
+export const CITIES = [CITY] as const;
+export const PRIMARY_CITY = CITY;
+
+// Localities served within Bengaluru. Powers the "areas we serve" section
+// and the booking address pickers.
+export const SERVICE_AREAS = [
+  'Koramangala',
+  'Indiranagar',
+  'HSR Layout',
+  'BTM Layout',
+  'Jayanagar',
+  'JP Nagar',
+  'Whitefield',
+  'Marathahalli',
+  'Bellandur',
+  'Sarjapur Road',
+  'Electronic City',
+  'Bannerghatta Road',
+  'Banashankari',
+  'Rajajinagar',
+  'Malleshwaram',
+  'Hebbal',
+  'Yelahanka',
+  'KR Puram',
+  'Mahadevapura',
+  'Hennur',
+] as const;
+
+// Services not yet launched — shown as "Coming soon" and disabled in booking.
+export const COMING_SOON_SERVICES = [
+  'vehicle-transport',
+  'intercity-moves',
+  'storage',
+] as const;
+
+export function isComingSoon(slug: string): boolean {
+  return (COMING_SOON_SERVICES as readonly string[]).includes(slug);
+}
+
+// Placeholder house-shifting price tiers. Indicative only — the owner sets
+// real prices later. Values are in rupees.
+export const HOUSE_SHIFTING_TIERS = [
+  { label: '1 RK / Few items', priceFrom: 2499, note: 'Studio or a handful of items' },
+  { label: '1 BHK', priceFrom: 4999, note: 'Compact home, 1 bedroom' },
+  { label: '2 BHK', priceFrom: 7999, note: 'Most common family move' },
+  { label: '3 BHK', priceFrom: 12999, note: 'Larger home, more furniture' },
+  { label: '4 BHK / Villa', priceFrom: 18999, note: 'Big home or villa' },
+] as const;
 
 export const HOURS = {
   weekday: '9:00 AM – 7:00 PM',
   sunday: 'Closed',
 } as const;
 
+// NOTE: Trust stats are hidden until we have real, verifiable figures.
+// Kept here (unused) so they're easy to switch back on later.
 export const STATS = {
-  // Placeholder display numbers — replace with real figures once you have them.
-  yearsExperience: 8,
-  movesCompleted: '5,000+',
+  yearsExperience: 0,
+  movesCompleted: '',
   citiesServed: CITIES.length,
-  rating: '4.8 / 5',
+  rating: '',
 } as const;
 
 export const TESTIMONIALS = [
   {
     name: 'Priya S.',
-    city: 'Mumbai',
+    city: 'Koramangala',
     quote:
       'The team showed up on time, packed everything carefully, and nothing was damaged. Felt like a real, dependable service.',
   },
   {
-    name: 'Rohan K.',
-    city: 'Pune',
+    name: 'Rahul N.',
+    city: 'Whitefield',
     quote:
       'Booked online, got a call within an hour, and the move went exactly as quoted. Transparent pricing — no surprises.',
   },
   {
-    name: 'Anita M.',
-    city: 'Thane',
+    name: 'Ananya R.',
+    city: 'Indiranagar',
     quote:
       'Office shifting was completed in a single day with zero downtime. Professional and friendly crew throughout.',
   },

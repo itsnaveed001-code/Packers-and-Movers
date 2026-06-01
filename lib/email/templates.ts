@@ -1,7 +1,7 @@
 import { BUSINESS } from '@/lib/constants';
 import { formatTimeLabel } from '@/lib/utils';
 
-const BRAND = '#1e40af';
+const BRAND = '#21396a';
 const BG = '#f1f5f9';
 const TEXT = '#0f172a';
 const MUTED = '#64748b';

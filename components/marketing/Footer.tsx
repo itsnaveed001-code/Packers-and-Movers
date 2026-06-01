@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Truck, Phone, Mail, MapPin } from 'lucide-react';
-import { BUSINESS, CITIES } from '@/lib/constants';
+import { BUSINESS, PRIMARY_CITY, SERVICE_AREAS } from '@/lib/constants';
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -31,11 +31,10 @@ export function Footer() {
 
           <div>
             <h4 className="mb-3 text-sm font-semibold text-white">Service Areas</h4>
-            <ul className="space-y-1.5 text-sm text-brand-100/80">
-              {CITIES.map((city) => (
-                <li key={city}>{city}</li>
-              ))}
-            </ul>
+            <p className="text-sm text-brand-100/80">
+              Serving all of {PRIMARY_CITY} — including{' '}
+              {SERVICE_AREAS.slice(0, 6).join(', ')}, and more.
+            </p>
           </div>
 
           <div>
