@@ -20,8 +20,15 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
-        <Link href="/" aria-label={BUSINESS.name}>
-          <Image src="/LOGO01.svg" alt={BUSINESS.name} width={200} height={80} priority />
+        <Link href="/" aria-label={BUSINESS.name} className="flex items-center">
+          <Image
+            src="/LOGO01.svg"
+            alt={BUSINESS.name}
+            width={200}
+            height={80}
+            priority
+            className="h-9 w-auto sm:h-10"
+          />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Main">

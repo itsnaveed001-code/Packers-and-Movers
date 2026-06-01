@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { AddressAutocomplete } from './AddressAutocomplete';
+import { SERVICE_AREAS } from '@/lib/constants';
 
 const indianPhoneRegex = /^(\+91[\s-]?)?[6-9]\d{9}$/;
 const pincodeRegex = /^\d{6}$/;
@@ -42,6 +44,8 @@ export function CustomerForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
@@ -50,6 +54,12 @@ export function CustomerForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+      {/* No-key fallback / quick-pick suggestions for the City field */}
+      <datalist id="blr-localities">
+        {SERVICE_AREAS.map((area) => (
+          <option key={area} value={area} />
+        ))}
+      </datalist>
       <div className="space-y-4">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Your details
@@ -112,27 +122,25 @@ export function CustomerForm({
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Pickup location
         </h3>
-        <div>
-          <Label htmlFor="pickup_address">Address</Label>
-          <Textarea
-            id="pickup_address"
-            rows={2}
-            aria-invalid={!!errors.pickup_address}
-            className="mt-1.5"
-            autoComplete="street-address"
-            {...register('pickup_address')}
-          />
-          {errors.pickup_address && (
-            <p className="mt-1 text-xs text-destructive">
-              {errors.pickup_address.message}
-            </p>
-          )}
-        </div>
+        <AddressAutocomplete
+          id="pickup_address"
+          label="Address"
+          placeholder="Start typing your pickup address…"
+          value={watch('pickup_address') || ''}
+          onChange={(v) => setValue('pickup_address', v, { shouldValidate: true })}
+          onResolved={(r) => {
+            setValue('pickup_address', r.address, { shouldValidate: true });
+            if (r.city) setValue('pickup_city', r.city, { shouldValidate: true });
+            if (r.pincode) setValue('pickup_pincode', r.pincode, { shouldValidate: true });
+          }}
+          error={errors.pickup_address?.message}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="pickup_city">City</Label>
+            <Label htmlFor="pickup_city">City / Area</Label>
             <Input
               id="pickup_city"
+              list="blr-localities"
               aria-invalid={!!errors.pickup_city}
               className="mt-1.5"
               {...register('pickup_city')}
@@ -165,26 +173,25 @@ export function CustomerForm({
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Drop-off location
         </h3>
-        <div>
-          <Label htmlFor="dropoff_address">Address</Label>
-          <Textarea
-            id="dropoff_address"
-            rows={2}
-            aria-invalid={!!errors.dropoff_address}
-            className="mt-1.5"
-            {...register('dropoff_address')}
-          />
-          {errors.dropoff_address && (
-            <p className="mt-1 text-xs text-destructive">
-              {errors.dropoff_address.message}
-            </p>
-          )}
-        </div>
+        <AddressAutocomplete
+          id="dropoff_address"
+          label="Address"
+          placeholder="Start typing your drop-off address…"
+          value={watch('dropoff_address') || ''}
+          onChange={(v) => setValue('dropoff_address', v, { shouldValidate: true })}
+          onResolved={(r) => {
+            setValue('dropoff_address', r.address, { shouldValidate: true });
+            if (r.city) setValue('dropoff_city', r.city, { shouldValidate: true });
+            if (r.pincode) setValue('dropoff_pincode', r.pincode, { shouldValidate: true });
+          }}
+          error={errors.dropoff_address?.message}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label htmlFor="dropoff_city">City</Label>
+            <Label htmlFor="dropoff_city">City / Area</Label>
             <Input
               id="dropoff_city"
+              list="blr-localities"
               aria-invalid={!!errors.dropoff_city}
               className="mt-1.5"
               {...register('dropoff_city')}
