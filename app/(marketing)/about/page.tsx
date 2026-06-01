@@ -1,75 +1,77 @@
 import type { Metadata } from 'next';
-import { BadgeCheck, Shield, FileCheck } from 'lucide-react';
-import { BUSINESS, STATS } from '@/lib/constants';
+import { BUSINESS, PRIMARY_CITY } from '@/lib/constants';
+import { Shield, Wallet, Clock, BadgeCheck } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'About us',
-  description: `Learn about ${BUSINESS.name} — our story, the team, and what makes our moves different.`,
+  title: 'About',
+  description: `Learn about ${BUSINESS.name}, our mission, and the team behind your move in ${PRIMARY_CITY}.`,
 };
+
+const VALUES = [
+  {
+    icon: BadgeCheck,
+    title: 'Careful handling',
+    body: 'Trained, background-checked crew who pack and move your things like their own.',
+  },
+  {
+    icon: Wallet,
+    title: 'Honest pricing',
+    body: 'A clear estimate up front. No hidden charges added on the day of the move.',
+  },
+  {
+    icon: Clock,
+    title: 'On time',
+    body: 'We show up in the slot you book — and keep you posted if anything changes.',
+  },
+  {
+    icon: Shield,
+    title: 'Insured moves',
+    body: 'Transit cover available on every booking, so your move is protected.',
+  },
+];
 
 export default function AboutPage() {
   return (
-    <>
-      <section className="bg-gradient-to-b from-brand-50 to-white py-16 sm:py-20">
-        <div className="container max-w-3xl">
-          <p className="text-sm font-medium text-brand-700">About us</p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
-            Moving people, not just things
+    <div className="bg-white">
+      <section className="border-b bg-gradient-to-b from-brand-50 to-white">
+        <div className="container py-14 sm:py-16">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            About {BUSINESS.name}
           </h1>
-          <p className="mt-5 text-lg text-muted-foreground">
-            We started {BUSINESS.name} because we kept hearing the same stories — broken
-            furniture, mystery surcharges, vans that never arrived. We wanted to build a
-            moving company we'd recommend to our own family. So we did.
-          </p>
-          <p className="mt-4 text-muted-foreground">
-            Today our crew has completed thousands of moves across India. We're proud of the
-            ones that went perfectly — and we own the ones that didn't, every time.
+          <p className="mt-4 max-w-2xl text-muted-foreground">
+            {BUSINESS.name} is a packers and movers service based in {PRIMARY_CITY},
+            helping families and businesses relocate with less stress. We focus on
+            careful handling, honest pricing, and showing up when we say we will.
           </p>
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
-        <div className="container">
-          {/* Placeholder stats — replace with real figures once available. */}
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { label: 'Years in business', value: `${STATS.yearsExperience}+` },
-              { label: 'Moves completed', value: STATS.movesCompleted },
-              { label: 'Cities served', value: STATS.citiesServed },
-              { label: 'Average rating', value: STATS.rating },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl border bg-white p-6 text-center shadow-sm">
-                <div className="text-3xl font-bold text-brand-700">{s.value}</div>
-                <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
-              </div>
-            ))}
-          </div>
+      <section className="container grid gap-10 py-14 sm:py-16 md:grid-cols-2">
+        <div>
+          <h2 className="text-2xl font-semibold">Our story</h2>
+          <p className="mt-3 text-muted-foreground">
+            We started {BUSINESS.name} with a simple belief: moving shouldn&apos;t be
+            chaotic. We&apos;re building a moving service that {PRIMARY_CITY} can rely
+            on — one careful, on-time move at a time.
+          </p>
+          <p className="mt-3 text-muted-foreground">
+            Every move is handled by a trained, background-checked crew and tracked
+            from start to finish. No surprises, no hidden charges.
+          </p>
         </div>
-      </section>
 
-      <section className="bg-secondary/50 py-16 sm:py-20">
-        <div className="container">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight">Trust indicators</h2>
-            <p className="mt-3 text-muted-foreground">
-              We back every move with the paperwork to prove it.
-            </p>
-          </div>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {[
-              { icon: Shield, title: 'Transit insurance', body: 'Optional cover on every move.' },
-              { icon: BadgeCheck, title: 'Verified crew', body: 'Background-checked, uniformed, ID-bearing.' },
-              { icon: FileCheck, title: 'GST registered', body: `GSTIN ${BUSINESS.gst}` },
-            ].map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-2xl bg-white p-6 shadow-sm">
-                <Icon className="h-6 w-6 text-brand-600" />
-                <h3 className="mt-3 font-semibold">{title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{body}</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {VALUES.map(({ icon: Icon, title, body }) => (
+            <div key={title} className="rounded-2xl border bg-white p-6 shadow-sm">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50">
+                <Icon className="h-5 w-5 text-brand-600" />
               </div>
-            ))}
-          </div>
+              <h3 className="mt-4 text-base font-semibold">{title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{body}</p>
+            </div>
+          ))}
         </div>
       </section>
-    </>
+    </div>
   );
 }

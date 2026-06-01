@@ -1,8 +1,10 @@
 import Link from 'next/link';
-import { ArrowRight, MessageCircle, Shield, Star } from 'lucide-react';
+import { ArrowRight, MessageCircle, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { BUSINESS, PRIMARY_CITY, STATS } from '@/lib/constants';
+import { BUSINESS, PRIMARY_CITY } from '@/lib/constants';
 import { whatsappUrl } from '@/lib/utils';
+import Image from 'next/image';
+import * as React from 'react';
 
 export function Hero() {
   return (
@@ -11,8 +13,8 @@ export function Hero() {
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white border px-3 py-1 text-xs font-medium text-brand-700 shadow-sm">
-              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-              {STATS.rating} · {STATS.movesCompleted} moves completed
+              <Shield className="h-3.5 w-3.5 text-brand-600" />
+              Now serving all of {PRIMARY_CITY}
             </div>
 
             <h1 className="mt-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
@@ -48,20 +50,21 @@ export function Hero() {
 
           <div className="relative hidden lg:block">
             <div className="aspect-square rounded-3xl bg-gradient-to-br from-brand-100 via-brand-50 to-white shadow-inner">
-              <div className="absolute inset-8 flex flex-col justify-center gap-4 rounded-2xl bg-white p-6 shadow-lg ring-1 ring-brand-100">
+              <Image src="/heroillustration.svg" alt="Hero Illustration" width={600} height={100} priority />
+              <div className="absolute inset-8 flex flex-col justify-end gap-4 rounded-2xl bg-transparent p-6 shadow-lg ring-1 ring-brand-100">
                 <div className="flex items-center justify-between border-b pb-3">
-                  <span className="text-sm font-semibold text-brand-700">Today's bookings</span>
+                  <span className="text-sm font-semibold text-brand-700">Today&apos;s bookings</span>
                   <span className="text-xs text-muted-foreground">Live</span>
                 </div>
                 {[
-                  { name: 'Home Shifting', city: 'Andheri → Powai', time: '10:00 AM' },
-                  { name: 'Office Shifting', city: 'BKC → Lower Parel', time: '12:00 PM' },
-                  { name: 'Vehicle Transport', city: 'Mumbai → Pune', time: '3:00 PM' },
+                  { name: 'Home Shifting', area: 'Koramangala → Whitefield', time: '10:00 AM' },
+                  { name: 'Office Shifting', area: 'Indiranagar → HSR Layout', time: '12:00 PM' },
+                  { name: '2 BHK Shifting', area: 'Jayanagar → Marathahalli', time: '3:00 PM' },
                 ].map((row) => (
                   <div key={row.name} className="flex items-center justify-between text-sm">
                     <div>
                       <p className="font-medium">{row.name}</p>
-                      <p className="text-xs text-muted-foreground">{row.city}</p>
+                      <p className="text-xs text-muted-foreground">{row.area}</p>
                     </div>
                     <span className="rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700">
                       {row.time}

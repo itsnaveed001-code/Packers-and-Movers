@@ -14,7 +14,7 @@ export function generateReferenceCode(): string {
       Math.floor(Math.random() * REFERENCE_ALPHABET.length),
     );
   }
-  return `PGM-${suffix}`;
+  return `ESX-${suffix}`;
 }
 
 const INR_FORMATTER = new Intl.NumberFormat('en-IN', {

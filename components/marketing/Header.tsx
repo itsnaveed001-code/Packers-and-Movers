@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Menu, X, Truck } from 'lucide-react';
+import Image from 'next/image';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BUSINESS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -19,9 +20,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-brand-700">
-          <Truck className="h-6 w-6" />
-          <span className="font-semibold text-base sm:text-lg">{BUSINESS.name}</span>
+        <Link href="/" aria-label={BUSINESS.name}>
+          <Image src="/LOGO01.svg" alt={BUSINESS.name} width={200} height={80} priority />
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Main">

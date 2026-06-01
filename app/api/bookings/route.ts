@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createBookingSchema } from '@/lib/validation';
 import { generateReferenceCode } from '@/lib/utils';
+import { BUSINESS } from '@/lib/constants';
 import { sendEmail } from '@/lib/email/send';
 import {
   adminNotificationEmail,
@@ -153,7 +154,8 @@ export async function POST(req: NextRequest) {
 
     if (!insertErr && insertedRows) {
       // Fire-and-forget emails. Don't block on them; log if they fail.
-      const adminEmail = process.env.ADMIN_EMAIL;
+      // Falls back to the business inbox so notifications work once RESEND_API_KEY is set.
+      const adminEmail = process.env.ADMIN_EMAIL || BUSINESS.email;
       void (async () => {
         try {
           const emailData = {

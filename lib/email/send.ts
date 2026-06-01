@@ -27,7 +27,10 @@ function getResend(): Resend | null {
  */
 export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const resend = getResend();
-  const from = process.env.RESEND_FROM_EMAIL || `${BUSINESS.name} <noreply@${BUSINESS.domain}>`;
+  // Default to Resend's shared sender so email works the moment RESEND_API_KEY
+  // is set. After you verify your own domain in Resend, set RESEND_FROM_EMAIL to
+  // e.g. "EasyShiftX <bookings@easyshiftx.com>" to send from your brand.
+  const from = process.env.RESEND_FROM_EMAIL || `${BUSINESS.name} <onboarding@resend.dev>`;
 
   if (!resend) {
     if (process.env.NODE_ENV === 'production') {
