@@ -3,18 +3,20 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, Phone, MessageCircle, Copy, Download } from 'lucide-react';
+import { CheckCircle2, Phone, MessageCircle, Copy, Download, CalendarPlus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/toast';
 import { formatTimeLabel, telUrl, whatsappUrl } from '@/lib/utils';
 import { STATUS_LABELS, BUSINESS } from '@/lib/constants';
+import { googleCalendarUrl, buildIcs, type CalendarEvent } from '@/lib/calendar';
 
 type LookupBody = {
   reference_code: string;
   booking_date: string;
   booking_time: string;
+  duration_hours: number | null;
   status: keyof typeof STATUS_LABELS;
   customer_first_name: string;
   pickup_city: string;
@@ -129,6 +131,39 @@ export function BookingConfirmedView() {
     }
   }
 
+  function eventFor(d: LookupBody): CalendarEvent {
+    return {
+      title: `${BUSINESS.name} move — ${d.service?.name ?? 'Shifting'}`,
+      description:
+        `Booking reference: ${d.reference_code}\n` +
+        `Route: ${d.pickup_city} → ${d.dropoff_city}\n` +
+        `We'll call within 2 hours to confirm. Questions? ${BUSINESS.phone}.`,
+      location: `${d.pickup_city} → ${d.dropoff_city}, Bengaluru`,
+      date: d.booking_date,
+      time: d.booking_time,
+      durationHours: d.duration_hours && d.duration_hours > 0 ? d.duration_hours : 3,
+    };
+  }
+
+  function downloadIcs(d: LookupBody) {
+    try {
+      const blob = new Blob([buildIcs(eventFor(d))], {
+        type: 'text/calendar;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${BUSINESS.name}-Booking-${d.reference_code}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      show({ variant: 'success', title: 'Calendar file downloaded' });
+    } catch {
+      show({ variant: 'error', title: 'Could not create the calendar file' });
+    }
+  }
+
   if (!ref) {
     return (
       <div className="mx-auto max-w-md text-center">
@@ -195,25 +230,51 @@ export function BookingConfirmedView() {
           )}
 
           {state.kind === 'ok' && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Summary label="Service" value={state.data.service?.name ?? '—'} />
-              <Summary
-                label="Date"
-                value={new Date(state.data.booking_date).toLocaleDateString('en-IN', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              />
-              <Summary label="Time" value={formatTimeLabel(state.data.booking_time)} />
-              <Summary label="Status" value={STATUS_LABELS[state.data.status]} />
-              <Summary
-                label="Route"
-                value={`${state.data.pickup_city} → ${state.data.dropoff_city}`}
-                full
-              />
-            </div>
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Summary label="Service" value={state.data.service?.name ?? '—'} />
+                <Summary
+                  label="Date"
+                  value={new Date(state.data.booking_date).toLocaleDateString('en-IN', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                />
+                <Summary label="Time" value={formatTimeLabel(state.data.booking_time)} />
+                <Summary label="Status" value={STATUS_LABELS[state.data.status]} />
+                <Summary
+                  label="Route"
+                  value={`${state.data.pickup_city} → ${state.data.dropoff_city}`}
+                  full
+                />
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+                  Add to your calendar
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button asChild variant="outline" className="flex-1 gap-2">
+                    <a
+                      href={googleCalendarUrl(eventFor(state.data))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <CalendarPlus className="h-4 w-4" /> Google Calendar
+                    </a>
+                  </Button>
+                  <Button
+                    onClick={() => downloadIcs(state.data)}
+                    variant="outline"
+                    className="flex-1 gap-2"
+                  >
+                    <Download className="h-4 w-4" /> Apple / Outlook (.ics)
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
 
           <div className="flex flex-col gap-2 border-t pt-5 sm:flex-row">

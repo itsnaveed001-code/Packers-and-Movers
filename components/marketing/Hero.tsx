@@ -9,7 +9,7 @@ import * as React from 'react';
 export function Hero() {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-white">
-      <div className="container py-16 sm:py-20 lg:py-24">
+      <div className="container py-12 sm:py-20 lg:py-24">
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white border px-3 py-1 text-xs font-medium text-brand-700 shadow-sm">
