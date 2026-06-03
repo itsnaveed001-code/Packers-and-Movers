@@ -3,10 +3,10 @@
 
 export const BUSINESS = {
   name: process.env.NEXT_PUBLIC_BUSINESS_NAME || 'EasyShiftX',
-  phone: process.env.NEXT_PUBLIC_BUSINESS_PHONE || '+91 90605 33477',
+  phone: process.env.NEXT_PUBLIC_BUSINESS_PHONE || '+91 78927 73770',
   // WhatsApp: digits only, country code + number (used in wa.me links)
-  whatsapp: process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || '919060533477',
-  email: process.env.NEXT_PUBLIC_BUSINESS_EMAIL || 'mazherkhan.2415@gmail.com',
+  whatsapp: process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || '917892773770',
+  email: process.env.NEXT_PUBLIC_BUSINESS_EMAIL || 'easyshiftx.2415@gmail.com',
   // TODO(owner): replace with real office address in Bengaluru
   address: 'Bengaluru, Karnataka, India',
   domain: 'easyshiftx.com',

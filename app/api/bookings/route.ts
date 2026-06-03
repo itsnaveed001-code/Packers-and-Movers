@@ -8,6 +8,7 @@ import { sendEmail } from '@/lib/email/send';
 import {
   adminNotificationEmail,
   customerConfirmationEmail,
+  bookingTemplateParams,
 } from '@/lib/email/templates';
 
 export const dynamic = 'force-dynamic';
@@ -176,11 +177,15 @@ export async function POST(req: NextRequest) {
           };
           if (adminEmail) {
             const t = adminNotificationEmail(emailData);
+            const templateIdRaw = process.env.BREVO_ADMIN_TEMPLATE_ID;
+            const templateId = templateIdRaw ? Number.parseInt(templateIdRaw, 10) : NaN;
             await sendEmail({
               to: adminEmail,
               subject: t.subject,
-              html: t.html,
+              html: t.html, // fallback when no template id / Resend provider
               replyTo: data.customer_email,
+              templateId: Number.isFinite(templateId) ? templateId : undefined,
+              params: bookingTemplateParams(emailData),
             });
           }
           const c = customerConfirmationEmail(emailData);

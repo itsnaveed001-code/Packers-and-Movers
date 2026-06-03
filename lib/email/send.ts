@@ -6,6 +6,14 @@ type EmailPayload = {
   subject: string;
   html: string;
   replyTo?: string;
+  /**
+   * Brevo transactional template id. When set (and Brevo is the active
+   * provider), Brevo renders the hosted template with `params` instead of
+   * using `subject` / `html`. The Resend fallback always uses `html`.
+   */
+  templateId?: number;
+  /** Variables exposed to the Brevo template as {{ params.KEY }}. */
+  params?: Record<string, unknown>;
 };
 
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
@@ -65,6 +73,27 @@ async function sendViaBrevo(payload: EmailPayload, apiKey: string): Promise<bool
   const senderEmail = process.env.BREVO_SENDER_EMAIL || BUSINESS.email;
   const senderName = process.env.BREVO_SENDER_NAME || BUSINESS.name;
 
+  const useTemplate =
+    typeof payload.templateId === 'number' && Number.isFinite(payload.templateId);
+
+  // Template mode: Brevo supplies the subject + content from the hosted
+  // template and fills {{ params.* }}. The sender comes from the template
+  // config, so we don't override it. Raw mode: send our own subject + HTML.
+  const body = useTemplate
+    ? {
+        templateId: payload.templateId,
+        to: toRecipients(payload.to),
+        ...(payload.params ? { params: payload.params } : {}),
+        ...(payload.replyTo ? { replyTo: { email: payload.replyTo } } : {}),
+      }
+    : {
+        sender: { name: senderName, email: senderEmail },
+        to: toRecipients(payload.to),
+        subject: payload.subject,
+        htmlContent: payload.html,
+        ...(payload.replyTo ? { replyTo: { email: payload.replyTo } } : {}),
+      };
+
   try {
     const res = await fetch(BREVO_ENDPOINT, {
       method: 'POST',
@@ -73,13 +102,7 @@ async function sendViaBrevo(payload: EmailPayload, apiKey: string): Promise<bool
         'content-type': 'application/json',
         accept: 'application/json',
       },
-      body: JSON.stringify({
-        sender: { name: senderName, email: senderEmail },
-        to: toRecipients(payload.to),
-        subject: payload.subject,
-        htmlContent: payload.html,
-        ...(payload.replyTo ? { replyTo: { email: payload.replyTo } } : {}),
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
