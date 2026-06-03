@@ -53,6 +53,27 @@ function formatDate(yyyyMmDd: string): string {
   });
 }
 
+/**
+ * Variables for the Brevo "new booking" admin template. Keys map to
+ * {{ params.KEY }} tokens in the hosted template — keep them in sync with
+ * the template content in Brevo.
+ */
+export function bookingTemplateParams(data: BookingEmailData): Record<string, string> {
+  return {
+    REFERENCE: data.reference_code,
+    SERVICE: data.service_name,
+    DATE: formatDate(data.booking_date),
+    TIME: formatTimeLabel(data.booking_time),
+    CUSTOMER_NAME: data.customer_name,
+    CUSTOMER_PHONE: data.customer_phone,
+    CUSTOMER_EMAIL: data.customer_email,
+    PICKUP: `${data.pickup_address}, ${data.pickup_city} - ${data.pickup_pincode}`,
+    DROPOFF: `${data.dropoff_address}, ${data.dropoff_city} - ${data.dropoff_pincode}`,
+    NOTES: data.notes && data.notes.trim() ? data.notes : '—',
+    ADMIN_URL: `${BUSINESS.siteUrl}/admin`,
+  };
+}
+
 export function adminNotificationEmail(data: BookingEmailData): { subject: string; html: string } {
   const subject = `New booking — ${data.reference_code} — ${data.service_name} on ${formatDate(data.booking_date)}`;
   const adminUrl = `${BUSINESS.siteUrl}/admin`;

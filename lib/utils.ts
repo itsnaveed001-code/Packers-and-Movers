@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { BUSINESS } from '@/lib/constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -40,11 +41,11 @@ export function formatTimeLabel(time: string): string {
 }
 
 export function whatsappUrl(message?: string): string {
-  const base = `https://wa.me/${process.env.NEXT_PUBLIC_BUSINESS_WHATSAPP || '919876543210'}`;
+  const base = `https://wa.me/${BUSINESS.whatsapp}`;
   return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
 export function telUrl(): string {
-  const phone = (process.env.NEXT_PUBLIC_BUSINESS_PHONE || '+919876543210').replace(/\s/g, '');
+  const phone = BUSINESS.phone.replace(/\s/g, '');
   return `tel:${phone}`;
 }
