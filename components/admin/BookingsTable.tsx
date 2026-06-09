@@ -22,7 +22,9 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from './StatusBadge';
+import { useToast } from '@/components/ui/toast';
 import { formatTimeLabel } from '@/lib/utils';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { BOOKING_STATUSES, STATUS_LABELS, type BookingStatus } from '@/lib/constants';
 
 type BookingRow = {
@@ -39,9 +41,11 @@ type BookingRow = {
 };
 
 export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'upcoming' | 'all' }) {
+  const { show } = useToast();
   const [rows, setRows] = React.useState<BookingRow[] | null>(null);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [search, setSearch] = React.useState('');
+  const [refreshTick, setRefreshTick] = React.useState(0);
   const filter = initialFilter ?? 'all';
 
   React.useEffect(() => {
@@ -71,7 +75,38 @@ export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'up
     return () => {
       cancelled = true;
     };
-  }, [statusFilter, filter]);
+  }, [statusFilter, filter, refreshTick]);
+
+  // Realtime: poke the dashboard when a new booking lands so the owner sees
+  // it without reloading. Requires Realtime to be enabled for `bookings` in
+  // Supabase (Database -> Replication). Falls back silently if unavailable.
+  React.useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel('admin-bookings-stream')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'bookings' },
+        (payload) => {
+          const row = (payload.new ?? {}) as Partial<BookingRow> & {
+            customer_name?: string;
+            reference_code?: string;
+          };
+          show({
+            variant: 'success',
+            title: 'New booking',
+            description: row.customer_name
+              ? `${row.customer_name} · ${row.reference_code ?? ''}`
+              : 'A new booking just came in.',
+          });
+          setRefreshTick((t) => t + 1);
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [show]);
 
   const filtered = React.useMemo(() => {
     if (!rows) return null;
