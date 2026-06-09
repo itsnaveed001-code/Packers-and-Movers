@@ -8,6 +8,7 @@ import {
   Boxes,
   LogOut,
   Truck,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -18,6 +19,7 @@ const ITEMS = [
   { href: '/admin', label: 'Bookings', icon: LayoutDashboard, exact: true },
   { href: '/admin/availability', label: 'Availability', icon: CalendarOff },
   { href: '/admin/services', label: 'Services', icon: Boxes },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {

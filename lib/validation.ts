@@ -59,9 +59,27 @@ export type ContactFormInput = z.infer<typeof contactFormSchema>;
 export const updateBookingSchema = z.object({
   status: z.enum(BOOKING_STATUSES).optional(),
   admin_notes: z.string().trim().max(1000).optional().or(z.literal('')),
+  booking_date: z.string().regex(dateRegex, 'Invalid date').optional(),
+  booking_time: z.string().regex(timeRegex, 'Invalid time').optional(),
 });
 
 export type UpdateBookingInput = z.infer<typeof updateBookingSchema>;
+
+// availability_settings is a singleton — we PUT the whole row.
+export const updateSettingsSchema = z.object({
+  working_days: z
+    .array(z.number().int().min(0).max(6))
+    .min(1, 'Pick at least one working day')
+    .max(7),
+  working_hours_start: z.string().regex(timeRegex, 'Invalid start time'),
+  working_hours_end: z.string().regex(timeRegex, 'Invalid end time'),
+  slot_duration_minutes: z.number().int().min(15).max(480),
+  max_concurrent_bookings_per_slot: z.number().int().min(1).max(20),
+  advance_booking_days: z.number().int().min(1).max(365),
+  minimum_notice_hours: z.number().int().min(0).max(168),
+});
+
+export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 
 export const slotsQuerySchema = z.object({
   date: z.string().regex(dateRegex),
