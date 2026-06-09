@@ -7,6 +7,7 @@ import { ArrowLeft, Phone, MessageCircle, Mail, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
@@ -28,33 +29,87 @@ import type { Booking, Service } from '@/types/database';
 
 type DetailBooking = Booking & { service: Pick<Service, 'name' | 'slug'> | null };
 
+// DB stores HH:MM:SS but <input type="time"> wants HH:MM.
+function trimSeconds(t: string): string {
+  return t.length >= 5 ? t.slice(0, 5) : t;
+}
+
+const RESCHEDULE_ERROR_MESSAGES: Record<string, string> = {
+  date_in_past: "Can't reschedule into the past.",
+  date_too_far: 'Date is beyond the advance-booking window in Settings.',
+  date_blocked: 'That date is blocked (holiday / capacity out).',
+  non_working_day: 'That day of the week is not a working day in Settings.',
+  time_out_of_hours: 'Time is outside working hours in Settings.',
+  slot_taken: 'That slot is already at max capacity.',
+  incomplete_reschedule: 'Pick both a date and a time.',
+  no_settings: 'Working-hours settings are missing. Set them under Settings.',
+};
+
 export function BookingDetail({ booking }: { booking: DetailBooking }) {
   const router = useRouter();
   const { show } = useToast();
 
   const [status, setStatus] = React.useState<BookingStatus>(booking.status);
   const [notes, setNotes] = React.useState<string>(booking.admin_notes ?? '');
+  const [bookingDate, setBookingDate] = React.useState<string>(
+    booking.booking_date,
+  );
+  const [bookingTime, setBookingTime] = React.useState<string>(
+    trimSeconds(booking.booking_time),
+  );
   const [saving, setSaving] = React.useState(false);
 
+  const rescheduled =
+    bookingDate !== booking.booking_date ||
+    bookingTime !== trimSeconds(booking.booking_time);
+
   const dirty =
-    status !== booking.status || (notes || '') !== (booking.admin_notes ?? '');
+    status !== booking.status ||
+    (notes || '') !== (booking.admin_notes ?? '') ||
+    rescheduled;
 
   async function save() {
     setSaving(true);
     try {
+      const body: Record<string, unknown> = {
+        status,
+        admin_notes: notes,
+      };
+      if (rescheduled) {
+        body.booking_date = bookingDate;
+        body.booking_time = bookingTime;
+      }
       const res = await fetch(`/api/bookings/${booking.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, admin_notes: notes }),
+        body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error('failed');
-      show({ variant: 'success', title: 'Saved' });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          message?: string;
+        };
+        const description =
+          errBody.message ||
+          (errBody.error && RESCHEDULE_ERROR_MESSAGES[errBody.error]) ||
+          'Please try again.';
+        show({
+          variant: 'error',
+          title: "Couldn't save",
+          description,
+        });
+        return;
+      }
+      show({
+        variant: 'success',
+        title: rescheduled ? 'Rescheduled' : 'Saved',
+      });
       router.refresh();
     } catch {
       show({
         variant: 'error',
         title: "Couldn't save",
-        description: 'Please try again.',
+        description: 'Network error. Please try again.',
       });
     } finally {
       setSaving(false);
@@ -191,6 +246,42 @@ export function BookingDetail({ booking }: { booking: DetailBooking }) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium">Reschedule</p>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="booking_date" className="text-xs text-muted-foreground">
+                    Date
+                  </Label>
+                  <Input
+                    id="booking_date"
+                    type="date"
+                    value={bookingDate}
+                    onChange={(e) => setBookingDate(e.target.value)}
+                    className="mt-1"
+                    min={new Date().toISOString().slice(0, 10)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="booking_time" className="text-xs text-muted-foreground">
+                    Time
+                  </Label>
+                  <Input
+                    id="booking_time"
+                    type="time"
+                    value={bookingTime}
+                    onChange={(e) => setBookingTime(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              {rescheduled && (
+                <p className="mt-1.5 text-xs text-amber-700">
+                  Saving will move this booking. The customer is not auto-notified — call them.
+                </p>
+              )}
             </div>
 
             <div>
