@@ -5,9 +5,12 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   CalendarOff,
+  CalendarDays,
   Boxes,
   LogOut,
   Truck,
+  Settings,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -16,8 +19,11 @@ import { BUSINESS } from '@/lib/constants';
 
 const ITEMS = [
   { href: '/admin', label: 'Bookings', icon: LayoutDashboard, exact: true },
+  { href: '/admin/schedule', label: 'Schedule', icon: CalendarDays },
+  { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
   { href: '/admin/availability', label: 'Availability', icon: CalendarOff },
   { href: '/admin/services', label: 'Services', icon: Boxes },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {

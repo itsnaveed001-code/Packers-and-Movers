@@ -89,6 +89,10 @@ export type Database = {
           notes: string | null;
           status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
           admin_notes: string | null;
+          final_price: number | null;
+          payment_received: boolean;
+          paid_at: string | null;
+          payment_method: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -111,6 +115,10 @@ export type Database = {
           notes?: string | null;
           status?: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
           admin_notes?: string | null;
+          final_price?: number | null;
+          payment_received?: boolean;
+          paid_at?: string | null;
+          payment_method?: string | null;
           created_at?: string;
           updated_at?: string;
         };
