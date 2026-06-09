@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   CalendarOff,
+  CalendarDays,
   Boxes,
   LogOut,
   Truck,
@@ -17,6 +18,7 @@ import { BUSINESS } from '@/lib/constants';
 
 const ITEMS = [
   { href: '/admin', label: 'Bookings', icon: LayoutDashboard, exact: true },
+  { href: '/admin/schedule', label: 'Schedule', icon: CalendarDays },
   { href: '/admin/availability', label: 'Availability', icon: CalendarOff },
   { href: '/admin/services', label: 'Services', icon: Boxes },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
