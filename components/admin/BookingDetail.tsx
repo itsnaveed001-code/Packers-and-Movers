@@ -57,16 +57,31 @@ export function BookingDetail({ booking }: { booking: DetailBooking }) {
   const [bookingTime, setBookingTime] = React.useState<string>(
     trimSeconds(booking.booking_time),
   );
+  const [priceRupees, setPriceRupees] = React.useState<string>(
+    booking.final_price == null ? '' : String(booking.final_price / 100),
+  );
+  const [paid, setPaid] = React.useState<boolean>(booking.payment_received);
+  const [paymentMethod, setPaymentMethod] = React.useState<string>(
+    booking.payment_method ?? '',
+  );
   const [saving, setSaving] = React.useState(false);
 
   const rescheduled =
     bookingDate !== booking.booking_date ||
     bookingTime !== trimSeconds(booking.booking_time);
 
+  const initialPriceStr =
+    booking.final_price == null ? '' : String(booking.final_price / 100);
+  const financeDirty =
+    priceRupees !== initialPriceStr ||
+    paid !== booking.payment_received ||
+    (paymentMethod || '') !== (booking.payment_method ?? '');
+
   const dirty =
     status !== booking.status ||
     (notes || '') !== (booking.admin_notes ?? '') ||
-    rescheduled;
+    rescheduled ||
+    financeDirty;
 
   async function save() {
     setSaving(true);
@@ -78,6 +93,18 @@ export function BookingDetail({ booking }: { booking: DetailBooking }) {
       if (rescheduled) {
         body.booking_date = bookingDate;
         body.booking_time = bookingTime;
+      }
+      if (financeDirty) {
+        if (priceRupees.trim() === '') {
+          body.final_price = null;
+        } else {
+          const rupees = Number.parseFloat(priceRupees);
+          if (Number.isFinite(rupees) && rupees >= 0) {
+            body.final_price = Math.round(rupees * 100);
+          }
+        }
+        body.payment_received = paid;
+        body.payment_method = paymentMethod;
       }
       const res = await fetch(`/api/bookings/${booking.id}`, {
         method: 'PATCH',
@@ -282,6 +309,62 @@ export function BookingDetail({ booking }: { booking: DetailBooking }) {
                   Saving will move this booking. The customer is not auto-notified — call them.
                 </p>
               )}
+            </div>
+
+            <div>
+              <p className="text-sm font-medium">Finance</p>
+              <div className="mt-1.5 space-y-2">
+                <div>
+                  <Label htmlFor="final_price" className="text-xs text-muted-foreground">
+                    Final price (₹)
+                  </Label>
+                  <Input
+                    id="final_price"
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
+                    placeholder="e.g. 5000"
+                    value={priceRupees}
+                    onChange={(e) => setPriceRupees(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="payment_method" className="text-xs text-muted-foreground">
+                    Payment method
+                  </Label>
+                  <Select
+                    value={paymentMethod || 'none'}
+                    onValueChange={(v) => setPaymentMethod(v === 'none' ? '' : v)}
+                  >
+                    <SelectTrigger id="payment_method" className="mt-1">
+                      <SelectValue placeholder="Not recorded" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Not recorded</SelectItem>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="bank_transfer">Bank transfer</SelectItem>
+                      <SelectItem value="card">Card</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border p-2.5 text-sm hover:bg-secondary/50">
+                  <input
+                    type="checkbox"
+                    checked={paid}
+                    onChange={(e) => setPaid(e.target.checked)}
+                    className="h-4 w-4 rounded border-input accent-emerald-600"
+                  />
+                  <span className="flex-1">Payment received</span>
+                  {booking.paid_at && paid && (
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(booking.paid_at), 'd MMM, p')}
+                    </span>
+                  )}
+                </label>
+              </div>
             </div>
 
             <div>

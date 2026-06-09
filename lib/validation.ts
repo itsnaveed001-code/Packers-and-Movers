@@ -61,6 +61,16 @@ export const updateBookingSchema = z.object({
   admin_notes: z.string().trim().max(1000).optional().or(z.literal('')),
   booking_date: z.string().regex(dateRegex, 'Invalid date').optional(),
   booking_time: z.string().regex(timeRegex, 'Invalid time').optional(),
+  // Paise. Owner records the actual price after the job — used for revenue reports.
+  final_price: z.number().int().nonnegative().max(10_000_000).nullable().optional(),
+  payment_received: z.boolean().optional(),
+  payment_method: z
+    .string()
+    .trim()
+    .max(40)
+    .nullable()
+    .optional()
+    .or(z.literal('')),
 });
 
 export type UpdateBookingInput = z.infer<typeof updateBookingSchema>;

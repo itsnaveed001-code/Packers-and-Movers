@@ -58,6 +58,18 @@ export async function PATCH(
   if (parsed.data.status !== undefined) payload.status = parsed.data.status;
   if (parsed.data.admin_notes !== undefined)
     payload.admin_notes = parsed.data.admin_notes || null;
+  if (parsed.data.final_price !== undefined)
+    payload.final_price = parsed.data.final_price;
+  if (parsed.data.payment_method !== undefined) {
+    payload.payment_method = parsed.data.payment_method || null;
+  }
+  if (parsed.data.payment_received !== undefined) {
+    payload.payment_received = parsed.data.payment_received;
+    // Stamp paid_at when payment_received flips on; clear it when flipped off.
+    payload.paid_at = parsed.data.payment_received
+      ? new Date().toISOString()
+      : null;
+  }
 
   const isReschedule =
     parsed.data.booking_date !== undefined ||
