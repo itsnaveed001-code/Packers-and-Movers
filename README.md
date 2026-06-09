@@ -18,7 +18,7 @@ Production-ready Next.js 15 site for **EasyShiftX**, a packing and moving busine
 
 - Public marketing site (home, about, services, service detail, contact)
 - Slot-based booking flow (`/book`) — service → date → time → details → review
-- Booking confirmation page (`/booking-confirmed?ref=PGM-XXXXX`)
+- Booking confirmation page (`/booking-confirmed?ref=ESX-XXXXX`)
 - Admin control room (`/admin/*`) — bookings dashboard, booking detail with status/reschedule/notes, day-board schedule, availability, services CRUD, working-hours settings, revenue reports, CSV export
 - API routes — bookings (create/list/update), slots (availability), contact, lookup, admin settings/services/blocked-dates
 - Sitemap + robots, per-page metadata, JSON-LD on home

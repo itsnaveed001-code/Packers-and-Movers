@@ -96,6 +96,8 @@ export const slotsQuerySchema = z.object({
   service_id: z.string().regex(uuidRegex).optional(),
 });
 
+// Codes are 'ESX-XXXXX' on the rebranded brand; legacy bookings (pre-rebrand)
+// have 'PGM-XXXXX'. Accept both so legacy customers can still look up old bookings.
 export const referenceCodeSchema = z
   .string()
-  .regex(/^PGM-[A-Z2-9]{5}$/, 'Invalid reference code');
+  .regex(/^(ESX|PGM)-[A-Z2-9]{5}$/, 'Invalid reference code');
