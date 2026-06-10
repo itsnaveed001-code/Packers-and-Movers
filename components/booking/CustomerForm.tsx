@@ -1,13 +1,18 @@
 'use client';
 
-import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import {
+  Stack,
+  SimpleGrid,
+  Flex,
+  Text,
+  Field,
+  Input,
+  Textarea,
+  Button,
+} from '@chakra-ui/react';
 import { AddressAutocomplete } from './AddressAutocomplete';
 import { SERVICE_AREAS } from '@/lib/constants';
 
@@ -32,6 +37,20 @@ const customerFormSchema = z.object({
 
 export type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      fontSize="sm"
+      fontWeight="semibold"
+      textTransform="uppercase"
+      letterSpacing="wide"
+      color="fg.muted"
+    >
+      {children}
+    </Text>
+  );
+}
+
 export function CustomerForm({
   defaultValues,
   onBack,
@@ -53,189 +72,134 @@ export function CustomerForm({
   });
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate>
       {/* No-key fallback / quick-pick suggestions for the City field */}
       <datalist id="blr-localities">
         {SERVICE_AREAS.map((area) => (
           <option key={area} value={area} />
         ))}
       </datalist>
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Your details
-        </h3>
-        <div>
-          <Label htmlFor="customer_name">Full name</Label>
-          <Input
-            id="customer_name"
-            aria-invalid={!!errors.customer_name}
-            className="mt-1.5"
-            autoComplete="name"
-            {...register('customer_name')}
+
+      <Stack gap={6}>
+        <Stack gap={4}>
+          <SectionHeading>Your details</SectionHeading>
+          <Field.Root invalid={!!errors.customer_name} required>
+            <Field.Label>
+              Full name <Field.RequiredIndicator />
+            </Field.Label>
+            <Input autoComplete="name" {...register('customer_name')} />
+            <Field.ErrorText>{errors.customer_name?.message}</Field.ErrorText>
+          </Field.Root>
+          <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
+            <Field.Root invalid={!!errors.customer_phone} required>
+              <Field.Label>
+                Phone <Field.RequiredIndicator />
+              </Field.Label>
+              <Input
+                type="tel"
+                inputMode="tel"
+                placeholder="+91 98765 43210"
+                autoComplete="tel"
+                {...register('customer_phone')}
+              />
+              <Field.ErrorText>{errors.customer_phone?.message}</Field.ErrorText>
+            </Field.Root>
+            <Field.Root invalid={!!errors.customer_email} required>
+              <Field.Label>
+                Email <Field.RequiredIndicator />
+              </Field.Label>
+              <Input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                {...register('customer_email')}
+              />
+              <Field.ErrorText>{errors.customer_email?.message}</Field.ErrorText>
+            </Field.Root>
+          </SimpleGrid>
+        </Stack>
+
+        <Stack gap={4}>
+          <SectionHeading>Pickup location</SectionHeading>
+          <AddressAutocomplete
+            id="pickup_address"
+            label="Address"
+            placeholder="Start typing your pickup address…"
+            value={watch('pickup_address') || ''}
+            onChange={(v) => setValue('pickup_address', v, { shouldValidate: true })}
+            onResolved={(r) => {
+              setValue('pickup_address', r.address, { shouldValidate: true });
+              if (r.city) setValue('pickup_city', r.city, { shouldValidate: true });
+              if (r.pincode) setValue('pickup_pincode', r.pincode, { shouldValidate: true });
+            }}
+            error={errors.pickup_address?.message}
           />
-          {errors.customer_name && (
-            <p className="mt-1 text-xs text-destructive">
-              {errors.customer_name.message}
-            </p>
-          )}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="customer_phone">Phone</Label>
-            <Input
-              id="customer_phone"
-              type="tel"
-              inputMode="tel"
-              placeholder="+91 98765 43210"
-              aria-invalid={!!errors.customer_phone}
-              className="mt-1.5"
-              autoComplete="tel"
-              {...register('customer_phone')}
-            />
-            {errors.customer_phone && (
-              <p className="mt-1 text-xs text-destructive">
-                {errors.customer_phone.message}
-              </p>
-            )}
-          </div>
-          <div>
-            <Label htmlFor="customer_email">Email</Label>
-            <Input
-              id="customer_email"
-              type="email"
-              inputMode="email"
-              aria-invalid={!!errors.customer_email}
-              className="mt-1.5"
-              autoComplete="email"
-              {...register('customer_email')}
-            />
-            {errors.customer_email && (
-              <p className="mt-1 text-xs text-destructive">
-                {errors.customer_email.message}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+          <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
+            <Field.Root invalid={!!errors.pickup_city} required>
+              <Field.Label>City / Area</Field.Label>
+              <Input list="blr-localities" {...register('pickup_city')} />
+              <Field.ErrorText>{errors.pickup_city?.message}</Field.ErrorText>
+            </Field.Root>
+            <Field.Root invalid={!!errors.pickup_pincode} required>
+              <Field.Label>Pincode</Field.Label>
+              <Input
+                inputMode="numeric"
+                maxLength={6}
+                autoComplete="postal-code"
+                {...register('pickup_pincode')}
+              />
+              <Field.ErrorText>{errors.pickup_pincode?.message}</Field.ErrorText>
+            </Field.Root>
+          </SimpleGrid>
+        </Stack>
 
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Pickup location
-        </h3>
-        <AddressAutocomplete
-          id="pickup_address"
-          label="Address"
-          placeholder="Start typing your pickup address…"
-          value={watch('pickup_address') || ''}
-          onChange={(v) => setValue('pickup_address', v, { shouldValidate: true })}
-          onResolved={(r) => {
-            setValue('pickup_address', r.address, { shouldValidate: true });
-            if (r.city) setValue('pickup_city', r.city, { shouldValidate: true });
-            if (r.pincode) setValue('pickup_pincode', r.pincode, { shouldValidate: true });
-          }}
-          error={errors.pickup_address?.message}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="pickup_city">City / Area</Label>
-            <Input
-              id="pickup_city"
-              list="blr-localities"
-              aria-invalid={!!errors.pickup_city}
-              className="mt-1.5"
-              {...register('pickup_city')}
-            />
-            {errors.pickup_city && (
-              <p className="mt-1 text-xs text-destructive">{errors.pickup_city.message}</p>
-            )}
-          </div>
-          <div>
-            <Label htmlFor="pickup_pincode">Pincode</Label>
-            <Input
-              id="pickup_pincode"
-              inputMode="numeric"
-              maxLength={6}
-              aria-invalid={!!errors.pickup_pincode}
-              className="mt-1.5"
-              autoComplete="postal-code"
-              {...register('pickup_pincode')}
-            />
-            {errors.pickup_pincode && (
-              <p className="mt-1 text-xs text-destructive">
-                {errors.pickup_pincode.message}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+        <Stack gap={4}>
+          <SectionHeading>Drop-off location</SectionHeading>
+          <AddressAutocomplete
+            id="dropoff_address"
+            label="Address"
+            placeholder="Start typing your drop-off address…"
+            value={watch('dropoff_address') || ''}
+            onChange={(v) => setValue('dropoff_address', v, { shouldValidate: true })}
+            onResolved={(r) => {
+              setValue('dropoff_address', r.address, { shouldValidate: true });
+              if (r.city) setValue('dropoff_city', r.city, { shouldValidate: true });
+              if (r.pincode) setValue('dropoff_pincode', r.pincode, { shouldValidate: true });
+            }}
+            error={errors.dropoff_address?.message}
+          />
+          <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
+            <Field.Root invalid={!!errors.dropoff_city} required>
+              <Field.Label>City / Area</Field.Label>
+              <Input list="blr-localities" {...register('dropoff_city')} />
+              <Field.ErrorText>{errors.dropoff_city?.message}</Field.ErrorText>
+            </Field.Root>
+            <Field.Root invalid={!!errors.dropoff_pincode} required>
+              <Field.Label>Pincode</Field.Label>
+              <Input inputMode="numeric" maxLength={6} {...register('dropoff_pincode')} />
+              <Field.ErrorText>{errors.dropoff_pincode?.message}</Field.ErrorText>
+            </Field.Root>
+          </SimpleGrid>
+        </Stack>
 
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Drop-off location
-        </h3>
-        <AddressAutocomplete
-          id="dropoff_address"
-          label="Address"
-          placeholder="Start typing your drop-off address…"
-          value={watch('dropoff_address') || ''}
-          onChange={(v) => setValue('dropoff_address', v, { shouldValidate: true })}
-          onResolved={(r) => {
-            setValue('dropoff_address', r.address, { shouldValidate: true });
-            if (r.city) setValue('dropoff_city', r.city, { shouldValidate: true });
-            if (r.pincode) setValue('dropoff_pincode', r.pincode, { shouldValidate: true });
-          }}
-          error={errors.dropoff_address?.message}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="dropoff_city">City / Area</Label>
-            <Input
-              id="dropoff_city"
-              list="blr-localities"
-              aria-invalid={!!errors.dropoff_city}
-              className="mt-1.5"
-              {...register('dropoff_city')}
-            />
-            {errors.dropoff_city && (
-              <p className="mt-1 text-xs text-destructive">{errors.dropoff_city.message}</p>
-            )}
-          </div>
-          <div>
-            <Label htmlFor="dropoff_pincode">Pincode</Label>
-            <Input
-              id="dropoff_pincode"
-              inputMode="numeric"
-              maxLength={6}
-              aria-invalid={!!errors.dropoff_pincode}
-              className="mt-1.5"
-              {...register('dropoff_pincode')}
-            />
-            {errors.dropoff_pincode && (
-              <p className="mt-1 text-xs text-destructive">
-                {errors.dropoff_pincode.message}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+        <Field.Root>
+          <Field.Label>Notes (optional)</Field.Label>
+          <Textarea
+            rows={3}
+            placeholder="Anything special we should know? (lift access, fragile items, special hours…)"
+            {...register('notes')}
+          />
+        </Field.Root>
 
-      <div>
-        <Label htmlFor="notes">Notes (optional)</Label>
-        <Textarea
-          id="notes"
-          rows={3}
-          placeholder="Anything special we should know? (lift access, fragile items, special hours…)"
-          className="mt-1.5"
-          {...register('notes')}
-        />
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-        <Button type="button" variant="outline" onClick={onBack}>
-          Back
-        </Button>
-        <Button type="submit">Continue to review</Button>
-      </div>
+        <Flex direction={{ base: 'column', sm: 'row' }} justify="space-between" gap={2}>
+          <Button type="button" variant="outline" onClick={onBack}>
+            Back
+          </Button>
+          <Button type="submit" colorPalette="brand">
+            Continue to review
+          </Button>
+        </Flex>
+      </Stack>
     </form>
   );
 }

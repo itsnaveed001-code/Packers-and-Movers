@@ -1,13 +1,28 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle2, Phone, MessageCircle, Copy, Download, CalendarPlus } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/toast';
+import {
+  CheckCircle2,
+  Phone,
+  MessageCircle,
+  Copy,
+  Download,
+  CalendarPlus,
+} from 'lucide-react';
+import {
+  Box,
+  Card,
+  Button,
+  Skeleton,
+  Stack,
+  SimpleGrid,
+  Flex,
+  Heading,
+  Text,
+} from '@chakra-ui/react';
+import { toaster } from '@/components/Toaster';
 import { formatTimeLabel, telUrl, whatsappUrl } from '@/lib/utils';
 import { STATUS_LABELS, BUSINESS } from '@/lib/constants';
 import { googleCalendarUrl, buildIcs, type CalendarEvent } from '@/lib/calendar';
@@ -27,7 +42,6 @@ type LookupBody = {
 export function BookingConfirmedView() {
   const params = useSearchParams();
   const ref = params.get('ref');
-  const { show } = useToast();
 
   const [state, setState] = React.useState<
     { kind: 'loading' } | { kind: 'ok'; data: LookupBody } | { kind: 'error' }
@@ -53,9 +67,9 @@ export function BookingConfirmedView() {
   async function copy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      show({ variant: 'success', title: 'Copied reference code' });
+      toaster.create({ type: 'success', title: 'Copied reference code' });
     } catch {
-      show({ variant: 'error', title: "Couldn't copy — please write it down" });
+      toaster.create({ type: 'error', title: "Couldn't copy — please write it down" });
     }
   }
 
@@ -125,9 +139,9 @@ export function BookingConfirmedView() {
       doc.text(`Questions? Call ${BUSINESS.phone} or message us on WhatsApp.`, left, y);
 
       doc.save(`${BUSINESS.name}-Booking-${ref}.pdf`);
-      show({ variant: 'success', title: 'Receipt downloaded' });
+      toaster.create({ type: 'success', title: 'Receipt downloaded' });
     } catch {
-      show({ variant: 'error', title: 'Could not generate the receipt' });
+      toaster.create({ type: 'error', title: 'Could not generate the receipt' });
     }
   }
 
@@ -158,148 +172,167 @@ export function BookingConfirmedView() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      show({ variant: 'success', title: 'Calendar file downloaded' });
+      toaster.create({ type: 'success', title: 'Calendar file downloaded' });
     } catch {
-      show({ variant: 'error', title: 'Could not create the calendar file' });
+      toaster.create({ type: 'error', title: 'Could not create the calendar file' });
     }
   }
 
   if (!ref) {
     return (
-      <div className="mx-auto max-w-md text-center">
-        <p className="text-muted-foreground">No reference code in the URL.</p>
-        <Button asChild className="mt-4">
-          <Link href="/book">Book a move</Link>
+      <Box mx="auto" maxW="md" textAlign="center">
+        <Text color="fg.muted">No reference code in the URL.</Text>
+        <Button asChild mt={4} colorPalette="brand">
+          <NextLink href="/book">Book a move</NextLink>
         </Button>
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-6 text-center">
-        <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
-          <CheckCircle2 className="h-7 w-7 text-emerald-600" />
-        </div>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight">Booking received!</h1>
-        <p className="mt-2 text-muted-foreground">
-          Save your reference code — we'll ask for it when we call.
-        </p>
-      </div>
+    <Box mx="auto" maxW="2xl">
+      <Box mb={6} textAlign="center">
+        <Flex
+          display="inline-flex"
+          align="center"
+          justify="center"
+          h={14}
+          w={14}
+          rounded="full"
+          bg="green.100"
+          color="green.600"
+        >
+          <CheckCircle2 size={28} />
+        </Flex>
+        <Heading as="h1" mt={4} fontSize="3xl" letterSpacing="tight">
+          Booking received!
+        </Heading>
+        <Text mt={2} color="fg.muted">
+          Save your reference code — we&apos;ll ask for it when we call.
+        </Text>
+      </Box>
 
-      <Card>
-        <CardContent className="space-y-5 p-6">
-          <div className="rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 p-5 text-center">
-            <p className="text-xs uppercase tracking-wide text-brand-700">
-              Your reference code
-            </p>
-            <p className="mt-1 font-mono text-3xl font-bold text-brand-700 sm:text-4xl">
-              {ref}
-            </p>
-            <button
-              onClick={() => copy(ref)}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 hover:underline"
+      <Card.Root>
+        <Card.Body>
+          <Stack gap={5}>
+            <Box
+              rounded="xl"
+              borderWidth="2px"
+              borderStyle="dashed"
+              borderColor="brand.300"
+              bg="brand.50"
+              p={5}
+              textAlign="center"
             >
-              <Copy className="h-3.5 w-3.5" />
-              Copy code
-            </button>
-          </div>
-
-          <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-            <strong>What happens next:</strong> Our team will call you within 2 hours to
-            confirm your booking and walk through the details.
-          </div>
-
-          <Button onClick={downloadReceipt} variant="outline" className="w-full gap-2">
-            <Download className="h-4 w-4" /> Download receipt (PDF)
-          </Button>
-
-          {state.kind === 'loading' && (
-            <div className="space-y-3">
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-4 w-3/4" />
-            </div>
-          )}
-
-          {state.kind === 'error' && (
-            <p className="text-sm text-muted-foreground">
-              Couldn't load the booking summary — but your reference code above is what
-              we'll need. Please keep it handy.
-            </p>
-          )}
-
-          {state.kind === 'ok' && (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Summary label="Service" value={state.data.service?.name ?? '—'} />
-                <Summary
-                  label="Date"
-                  value={new Date(state.data.booking_date).toLocaleDateString('en-IN', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                />
-                <Summary label="Time" value={formatTimeLabel(state.data.booking_time)} />
-                <Summary label="Status" value={STATUS_LABELS[state.data.status]} />
-                <Summary
-                  label="Route"
-                  value={`${state.data.pickup_city} → ${state.data.dropoff_city}`}
-                  full
-                />
-              </div>
-
-              <div>
-                <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
-                  Add to your calendar
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button asChild variant="outline" className="flex-1 gap-2">
-                    <a
-                      href={googleCalendarUrl(eventFor(state.data))}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <CalendarPlus className="h-4 w-4" /> Google Calendar
-                    </a>
-                  </Button>
-                  <Button
-                    onClick={() => downloadIcs(state.data)}
-                    variant="outline"
-                    className="flex-1 gap-2"
-                  >
-                    <Download className="h-4 w-4" /> Apple / Outlook (.ics)
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="flex flex-col gap-2 border-t pt-5 sm:flex-row">
-            <Button asChild className="flex-1 gap-2" variant="default">
-              <a href={telUrl()}>
-                <Phone className="h-4 w-4" /> Call us
-              </a>
-            </Button>
-            <Button asChild className="flex-1 gap-2" variant="whatsapp">
-              <a
-                href={whatsappUrl(`Hi! My booking ref is ${ref}. `)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Text fontSize="xs" textTransform="uppercase" letterSpacing="wide" color="brand.700">
+                Your reference code
+              </Text>
+              <Text mt={1} fontFamily="mono" fontSize={{ base: '3xl', sm: '4xl' }} fontWeight="bold" color="brand.700">
+                {ref}
+              </Text>
+              <Button
+                variant="ghost"
+                size="xs"
+                colorPalette="brand"
+                mt={3}
+                onClick={() => copy(ref)}
               >
-                <MessageCircle className="h-4 w-4" /> WhatsApp us
-              </a>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+                <Copy size={14} /> Copy code
+              </Button>
+            </Box>
 
-      <p className="mt-6 text-center text-xs text-muted-foreground">
+            <Box rounded="md" borderWidth="1px" borderColor="orange.200" bg="orange.50" px={4} py={3} fontSize="sm" color="orange.900">
+              <Text as="strong">What happens next:</Text> Our team will call you within 2
+              hours to confirm your booking and walk through the details.
+            </Box>
+
+            <Button onClick={downloadReceipt} variant="outline" width="full">
+              <Download size={16} /> Download receipt (PDF)
+            </Button>
+
+            {state.kind === 'loading' && (
+              <Stack gap={3}>
+                <Skeleton height="16px" width="66%" />
+                <Skeleton height="16px" width="50%" />
+                <Skeleton height="16px" width="75%" />
+              </Stack>
+            )}
+
+            {state.kind === 'error' && (
+              <Text fontSize="sm" color="fg.muted">
+                Couldn&apos;t load the booking summary — but your reference code above is what
+                we&apos;ll need. Please keep it handy.
+              </Text>
+            )}
+
+            {state.kind === 'ok' && (
+              <>
+                <SimpleGrid columns={{ base: 1, sm: 2 }} gap={3}>
+                  <Summary label="Service" value={state.data.service?.name ?? '—'} />
+                  <Summary
+                    label="Date"
+                    value={new Date(state.data.booking_date).toLocaleDateString('en-IN', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  />
+                  <Summary label="Time" value={formatTimeLabel(state.data.booking_time)} />
+                  <Summary label="Status" value={STATUS_LABELS[state.data.status]} />
+                  <Summary
+                    label="Route"
+                    value={`${state.data.pickup_city} → ${state.data.dropoff_city}`}
+                    full
+                  />
+                </SimpleGrid>
+
+                <Box>
+                  <Text mb={2} fontSize="xs" textTransform="uppercase" letterSpacing="wide" color="fg.muted">
+                    Add to your calendar
+                  </Text>
+                  <Flex direction={{ base: 'column', sm: 'row' }} gap={2}>
+                    <Button asChild variant="outline" flex={1}>
+                      <a
+                        href={googleCalendarUrl(eventFor(state.data))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <CalendarPlus size={16} /> Google Calendar
+                      </a>
+                    </Button>
+                    <Button onClick={() => downloadIcs(state.data)} variant="outline" flex={1}>
+                      <Download size={16} /> Apple / Outlook (.ics)
+                    </Button>
+                  </Flex>
+                </Box>
+              </>
+            )}
+
+            <Flex direction={{ base: 'column', sm: 'row' }} gap={2} borderTopWidth="1px" pt={5}>
+              <Button asChild flex={1} colorPalette="brand">
+                <a href={telUrl()}>
+                  <Phone size={16} /> Call us
+                </a>
+              </Button>
+              <Button asChild flex={1} colorPalette="green">
+                <a
+                  href={whatsappUrl(`Hi! My booking ref is ${ref}. `)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle size={16} /> WhatsApp us
+                </a>
+              </Button>
+            </Flex>
+          </Stack>
+        </Card.Body>
+      </Card.Root>
+
+      <Text mt={6} textAlign="center" fontSize="xs" color="fg.muted">
         Tip: take a screenshot of this page in case you need it later.
-      </p>
-    </div>
+      </Text>
+    </Box>
   );
 }
 
@@ -313,9 +346,13 @@ function Summary({
   full?: boolean;
 }) {
   return (
-    <div className={full ? 'sm:col-span-2' : ''}>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
+    <Box gridColumn={full ? { sm: '1 / -1' } : undefined}>
+      <Text fontSize="xs" textTransform="uppercase" letterSpacing="wide" color="fg.muted">
+        {label}
+      </Text>
+      <Text fontSize="sm" fontWeight="medium">
+        {value}
+      </Text>
+    </Box>
   );
 }

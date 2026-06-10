@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { Container, Text } from '@chakra-ui/react';
 import { BookingConfirmedView } from '@/components/booking/BookingConfirmedView';
 
 export const metadata: Metadata = {
@@ -10,10 +11,16 @@ export const metadata: Metadata = {
 
 export default function BookingConfirmedPage() {
   return (
-    <section className="container py-12 sm:py-16">
-      <Suspense fallback={<p className="text-center text-muted-foreground">Loading…</p>}>
+    <Container maxW="7xl" py={{ base: 12, sm: 16 }}>
+      <Suspense
+        fallback={
+          <Text textAlign="center" color="fg.muted">
+            Loading…
+          </Text>
+        }
+      >
         <BookingConfirmedView />
       </Suspense>
-    </section>
+    </Container>
   );
 }

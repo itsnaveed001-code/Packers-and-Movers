@@ -1,14 +1,19 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowRight, CheckCircle2, Lock, MessageCircle } from 'lucide-react';
+import type { Metadata } from 'next';
 import {
+  Box,
+  Container,
+  Heading,
+  Text,
+  Stack,
+  HStack,
+  SimpleGrid,
+  Button,
+  Table,
   Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
+} from '@chakra-ui/react';
+import { ArrowRight, CheckCircle2, Lock, MessageCircle } from 'lucide-react';
 import { getServiceBySlug } from '@/lib/queries';
 import { formatINR, whatsappUrl } from '@/lib/utils';
 import { isComingSoon, HOUSE_SHIFTING_TIERS, PRIMARY_CITY } from '@/lib/constants';
@@ -182,159 +187,199 @@ export default async function ServiceDetailPage({
 
   return (
     <>
-      <section className="bg-gradient-to-b from-brand-50 to-white py-16 sm:py-20">
-        <div className="container max-w-3xl">
-          <p className="text-sm font-medium text-brand-700">Services</p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">
+      <Box
+        as="section"
+        py={{ base: 16, sm: 20 }}
+        bgGradient="to-b"
+        gradientFrom="brand.50"
+        gradientTo="white"
+      >
+        <Container maxW="3xl">
+          <Text fontSize="sm" fontWeight="medium" color="brand.700">
+            Services
+          </Text>
+          <Heading as="h1" mt={2} fontSize={{ base: '4xl', sm: '5xl' }} letterSpacing="tight">
             {service.name}
-          </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
+          </Heading>
+          <Text mt={4} fontSize="lg" color="fg.muted">
             {service.description}
-          </p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+          </Text>
+
+          <Stack mt={7} direction={{ base: 'column', sm: 'row' }} align={{ sm: 'center' }} gap={3}>
             {soon ? (
               <>
-                <span className="inline-flex items-center gap-2 rounded-lg bg-secondary px-4 py-2.5 text-sm font-medium text-muted-foreground">
-                  <Lock className="h-4 w-4" /> Coming soon to {PRIMARY_CITY}
-                </span>
-                <Button asChild size="lg" variant="whatsapp" className="gap-2">
+                <HStack
+                  display="inline-flex"
+                  gap={2}
+                  rounded="lg"
+                  bg="bg.subtle"
+                  px={4}
+                  py={2.5}
+                  fontSize="sm"
+                  fontWeight="medium"
+                  color="fg.muted"
+                >
+                  <Lock size={16} /> Coming soon to {PRIMARY_CITY}
+                </HStack>
+                <Button asChild size="lg" colorPalette="green">
                   <a
                     href={whatsappUrl(`Hi! Please notify me when ${service.name} is available.`)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <MessageCircle className="h-4 w-4" /> Notify me
+                    <MessageCircle size={16} /> Notify me
                   </a>
                 </Button>
               </>
             ) : (
               <>
-                <Button asChild size="lg" className="gap-2">
-                  <Link href={`/book?service=${service.slug}`}>
-                    Book this service <ArrowRight className="h-4 w-4" />
-                  </Link>
+                <Button asChild size="lg" colorPalette="brand">
+                  <NextLink href={`/book?service=${service.slug}`}>
+                    Book this service <ArrowRight size={16} />
+                  </NextLink>
                 </Button>
                 {service.base_price != null && (
-                  <p className="text-sm text-muted-foreground">
+                  <Text fontSize="sm" color="fg.muted">
                     Starting from{' '}
-                    <span className="font-semibold text-foreground">
+                    <Text as="span" fontWeight="semibold" color="fg">
                       {formatINR(service.base_price)}
-                    </span>
-                  </p>
+                    </Text>
+                  </Text>
                 )}
               </>
             )}
-          </div>
-        </div>
-      </section>
+          </Stack>
+        </Container>
+      </Box>
 
       {tiers.length > 0 && (
-        <section className="py-12">
-          <div className="container max-w-3xl">
-            <h2 className="text-2xl font-bold tracking-tight">Indicative pricing</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+        <Box as="section" py={12}>
+          <Container maxW="3xl">
+            <Heading as="h2" fontSize="2xl" letterSpacing="tight">
+              Indicative pricing
+            </Heading>
+            <Text mt={2} fontSize="sm" color="fg.muted">
               Starting prices by home size. Final price depends on distance, floor,
               and the exact items — we confirm a fixed quote before you pay.
-            </p>
-            <div className="mt-5 overflow-hidden rounded-2xl border">
-              <table className="w-full text-sm">
-                <thead className="bg-secondary/60 text-left">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Home size</th>
-                    <th className="px-4 py-3 font-semibold">Starting from</th>
-                  </tr>
-                </thead>
-                <tbody>
+            </Text>
+            <Box mt={5} overflow="hidden" rounded="2xl" borderWidth="1px">
+              <Table.Root size="md">
+                <Table.Header bg="bg.subtle">
+                  <Table.Row>
+                    <Table.ColumnHeader fontWeight="semibold">Home size</Table.ColumnHeader>
+                    <Table.ColumnHeader fontWeight="semibold">Starting from</Table.ColumnHeader>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
                   {tiers.map((t) => (
-                    <tr key={t.label} className="border-t">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-foreground">{t.label}</p>
-                        <p className="text-xs text-muted-foreground">{t.note}</p>
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-brand-700">
+                    <Table.Row key={t.label}>
+                      <Table.Cell>
+                        <Text fontWeight="medium">{t.label}</Text>
+                        <Text fontSize="xs" color="fg.muted">
+                          {t.note}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell fontWeight="semibold" color="brand.700">
                         ₹{t.priceFrom.toLocaleString('en-IN')}
-                      </td>
-                    </tr>
+                      </Table.Cell>
+                    </Table.Row>
                   ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">
+                </Table.Body>
+              </Table.Root>
+            </Box>
+            <Text mt={3} fontSize="xs" color="fg.muted">
               * Indicative starting prices. You&apos;ll get an exact quote on a quick call.
-            </p>
-          </div>
-        </section>
+            </Text>
+          </Container>
+        </Box>
       )}
 
       {includes.length > 0 && (
-        <section className="py-12">
-          <div className="container max-w-3xl">
-            <h2 className="text-2xl font-bold tracking-tight">What&apos;s included</h2>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+        <Box as="section" py={12}>
+          <Container maxW="3xl">
+            <Heading as="h2" fontSize="2xl" letterSpacing="tight">
+              What&apos;s included
+            </Heading>
+            <SimpleGrid mt={5} columns={{ base: 1, sm: 2 }} gap={3}>
               {includes.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-                  <span>{item}</span>
-                </li>
+                <HStack key={item} align="start" gap={2} fontSize="sm">
+                  <Box color="green.600" flexShrink={0} pt="2px">
+                    <CheckCircle2 size={20} />
+                  </Box>
+                  <Text>{item}</Text>
+                </HStack>
               ))}
-            </ul>
-          </div>
-        </section>
+            </SimpleGrid>
+          </Container>
+        </Box>
       )}
 
       {faqs.length > 0 && (
-        <section className="bg-secondary/50 py-12">
-          <div className="container max-w-3xl">
-            <h2 className="text-2xl font-bold tracking-tight">Frequently asked</h2>
-            <div className="mt-5 rounded-2xl border bg-white px-6">
-              <Accordion type="single" collapsible className="w-full">
+        <Box as="section" bg="bg.subtle" py={12}>
+          <Container maxW="3xl">
+            <Heading as="h2" fontSize="2xl" letterSpacing="tight">
+              Frequently asked
+            </Heading>
+            <Box mt={5} rounded="2xl" borderWidth="1px" bg="white" px={6}>
+              <Accordion.Root collapsible defaultValue={['item-0']}>
                 {faqs.map((f, i) => (
-                  <AccordionItem key={i} value={`item-${i}`}>
-                    <AccordionTrigger>{f.q}</AccordionTrigger>
-                    <AccordionContent>{f.a}</AccordionContent>
-                  </AccordionItem>
+                  <Accordion.Item key={i} value={`item-${i}`}>
+                    <Accordion.ItemTrigger cursor="pointer" py={4} fontWeight="medium">
+                      <Box flex="1" textAlign="start">
+                        {f.q}
+                      </Box>
+                      <Accordion.ItemIndicator />
+                    </Accordion.ItemTrigger>
+                    <Accordion.ItemContent>
+                      <Accordion.ItemBody pb={4} color="fg.muted">
+                        {f.a}
+                      </Accordion.ItemBody>
+                    </Accordion.ItemContent>
+                  </Accordion.Item>
                 ))}
-              </Accordion>
-            </div>
-          </div>
-        </section>
+              </Accordion.Root>
+            </Box>
+          </Container>
+        </Box>
       )}
 
-      <section className="py-12">
-        <div className="container max-w-3xl text-center">
+      <Box as="section" py={12}>
+        <Container maxW="3xl" textAlign="center">
           {soon ? (
             <>
-              <h2 className="text-2xl font-bold tracking-tight">
+              <Heading as="h2" fontSize="2xl" letterSpacing="tight">
                 {service.name} is launching soon in {PRIMARY_CITY}
-              </h2>
-              <p className="mt-2 text-muted-foreground">
+              </Heading>
+              <Text mt={2} color="fg.muted">
                 Want it sooner? Message us and we&apos;ll prioritise your area.
-              </p>
-              <Button asChild size="lg" variant="whatsapp" className="mt-5 gap-2">
+              </Text>
+              <Button asChild size="lg" colorPalette="green" mt={5}>
                 <a
                   href={whatsappUrl(`Hi! Please notify me when ${service.name} is available.`)}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <MessageCircle className="h-4 w-4" /> Notify me on WhatsApp
+                  <MessageCircle size={16} /> Notify me on WhatsApp
                 </a>
               </Button>
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-bold tracking-tight">
+              <Heading as="h2" fontSize="2xl" letterSpacing="tight">
                 Ready to book your {service.name.toLowerCase()}?
-              </h2>
-              <p className="mt-2 text-muted-foreground">It takes less than a minute.</p>
-              <Button asChild size="lg" className="mt-5 gap-2">
-                <Link href={`/book?service=${service.slug}`}>
-                  Book now <ArrowRight className="h-4 w-4" />
-                </Link>
+              </Heading>
+              <Text mt={2} color="fg.muted">
+                It takes less than a minute.
+              </Text>
+              <Button asChild size="lg" colorPalette="brand" mt={5}>
+                <NextLink href={`/book?service=${service.slug}`}>
+                  Book now <ArrowRight size={16} />
+                </NextLink>
               </Button>
             </>
           )}
-        </div>
-      </section>
+        </Container>
+      </Box>
     </>
   );
 }
