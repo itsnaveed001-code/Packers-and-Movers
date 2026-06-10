@@ -3,11 +3,16 @@
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/toast';
+import {
+  Stack,
+  SimpleGrid,
+  Field,
+  Input,
+  Textarea,
+  Button,
+  Text,
+} from '@chakra-ui/react';
+import { toaster } from '@/components/Toaster';
 import { contactFormSchema, type ContactFormInput } from '@/lib/validation';
 
 type FormValues = {
@@ -18,7 +23,6 @@ type FormValues = {
 };
 
 export function ContactForm() {
-  const { show } = useToast();
   const [submitting, setSubmitting] = React.useState(false);
   const {
     register,
@@ -38,15 +42,15 @@ export function ContactForm() {
         body: JSON.stringify(values satisfies ContactFormInput),
       });
       if (!res.ok) throw new Error('Request failed');
-      show({
-        variant: 'success',
+      toaster.create({
+        type: 'success',
         title: 'Message sent',
         description: "We'll get back to you within a few hours.",
       });
       reset();
     } catch {
-      show({
-        variant: 'error',
+      toaster.create({
+        type: 'error',
         title: "Couldn't send right now",
         description: 'Please try WhatsApp or call us instead.',
       });
@@ -56,73 +60,71 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <div>
-        <Label htmlFor="name">Your name</Label>
-        <Input
-          id="name"
-          aria-invalid={!!errors.name}
-          className="mt-1.5"
-          autoComplete="name"
-          {...register('name')}
-        />
-        {errors.name && (
-          <p className="mt-1 text-xs text-destructive">{errors.name.message}</p>
-        )}
-      </div>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <Stack gap={4}>
+        <Field.Root invalid={!!errors.name} required>
+          <Field.Label>
+            Your name <Field.RequiredIndicator />
+          </Field.Label>
+          <Input autoComplete="name" {...register('name')} />
+          <Field.ErrorText>{errors.name?.message}</Field.ErrorText>
+        </Field.Root>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            inputMode="email"
-            aria-invalid={!!errors.email}
-            className="mt-1.5"
-            autoComplete="email"
-            {...register('email')}
+        <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
+          <Field.Root invalid={!!errors.email} required>
+            <Field.Label>
+              Email <Field.RequiredIndicator />
+            </Field.Label>
+            <Input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              {...register('email')}
+            />
+            <Field.ErrorText>{errors.email?.message}</Field.ErrorText>
+          </Field.Root>
+
+          <Field.Root invalid={!!errors.phone} required>
+            <Field.Label>
+              Phone <Field.RequiredIndicator />
+            </Field.Label>
+            <Input
+              type="tel"
+              inputMode="tel"
+              placeholder="+91 98765 43210"
+              autoComplete="tel"
+              {...register('phone')}
+            />
+            <Field.ErrorText>{errors.phone?.message}</Field.ErrorText>
+          </Field.Root>
+        </SimpleGrid>
+
+        <Field.Root invalid={!!errors.message} required>
+          <Field.Label>
+            How can we help? <Field.RequiredIndicator />
+          </Field.Label>
+          <Textarea
+            rows={4}
+            placeholder="Tell us about your move…"
+            {...register('message')}
           />
-          {errors.email && (
-            <p className="mt-1 text-xs text-destructive">{errors.email.message}</p>
-          )}
-        </div>
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
-            type="tel"
-            inputMode="tel"
-            placeholder="+91 98765 43210"
-            aria-invalid={!!errors.phone}
-            className="mt-1.5"
-            autoComplete="tel"
-            {...register('phone')}
-          />
-          {errors.phone && (
-            <p className="mt-1 text-xs text-destructive">{errors.phone.message}</p>
-          )}
-        </div>
-      </div>
+          <Field.ErrorText>{errors.message?.message}</Field.ErrorText>
+        </Field.Root>
 
-      <div>
-        <Label htmlFor="message">How can we help?</Label>
-        <Textarea
-          id="message"
-          rows={4}
-          aria-invalid={!!errors.message}
-          className="mt-1.5"
-          placeholder="Tell us about your move…"
-          {...register('message')}
-        />
-        {errors.message && (
-          <p className="mt-1 text-xs text-destructive">{errors.message.message}</p>
-        )}
-      </div>
+        <Text fontSize="xs" color="fg.muted">
+          We only use your details to respond to this enquiry. No spam, ever.
+        </Text>
 
-      <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
-        {submitting ? 'Sending…' : 'Send message'}
-      </Button>
+        <Button
+          type="submit"
+          colorPalette="brand"
+          loading={submitting}
+          loadingText="Sending…"
+          alignSelf={{ base: 'stretch', sm: 'flex-start' }}
+        >
+          Send message
+        </Button>
+      </Stack>
     </form>
   );
 }
