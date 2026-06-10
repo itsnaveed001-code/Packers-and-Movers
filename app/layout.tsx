@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
-import './globals.css';
+// NOTE: globals.css (Tailwind) is intentionally NOT imported here. It is loaded
+// only by the admin layouts — `app/(admin)/layout.tsx` and
+// `app/(admin-public)/layout.tsx` — so the public marketing tree stays
+// Chakra-only and Tailwind's preflight can't clash with Chakra styles.
 import { ToastProvider } from '@/components/ui/toast';
 import { BUSINESS } from '@/lib/constants';
 

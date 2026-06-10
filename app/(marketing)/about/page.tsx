@@ -3,6 +3,7 @@ import { Shield, Wallet, Clock, BadgeCheck } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { BUSINESS, PRIMARY_CITY } from '@/lib/constants';
 import { pageMetadata } from '@/lib/seo';
+import { glassCard } from '@/theme/glass';
 
 export const metadata = pageMetadata({
   title: 'About',
@@ -74,7 +75,7 @@ export default function AboutPage() {
 
           <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
             {VALUES.map(({ icon: Icon, title, body }) => (
-              <Box key={title} rounded="2xl" borderWidth="1px" bg="white" p={6} shadow="sm">
+              <Box key={title} rounded="2xl" p={6} {...glassCard}>
                 <Flex
                   align="center"
                   justify="center"

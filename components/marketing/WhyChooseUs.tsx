@@ -1,6 +1,7 @@
 import { Box, Container, SimpleGrid, Heading, Text, Flex } from '@chakra-ui/react';
 import { Shield, BadgeCheck, Clock, Wallet } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { glassCard } from '@/theme/glass';
 
 const PILLARS: { icon: LucideIcon; title: string; body: string }[] = [
   {
@@ -40,7 +41,7 @@ export function WhyChooseUs() {
 
         <SimpleGrid mt={12} columns={{ base: 1, sm: 2, lg: 4 }} gap={6}>
           {PILLARS.map(({ icon: Icon, title, body }) => (
-            <Box key={title} rounded="2xl" bg="white" p={6} shadow="sm">
+            <Box key={title} rounded="2xl" p={6} {...glassCard}>
               <Flex
                 align="center"
                 justify="center"

@@ -26,6 +26,14 @@ const NAV = [
   { href: '/contact', label: 'Contact' },
 ];
 
+// The frosted-glass recipe, reused on the bar and the drawer.
+const glass = {
+  bg: 'rgba(255, 255, 255, 0.6)',
+  backdropFilter: 'blur(18px) saturate(180%)',
+  // Safari / iOS need the prefixed version explicitly.
+  css: { WebkitBackdropFilter: 'blur(16px) saturate(180%)' },
+};
+
 export function Header() {
   const [open, setOpen] = React.useState(false);
 
@@ -33,15 +41,23 @@ export function Header() {
     <Box
       as="header"
       position="sticky"
-      top={0}
-      zIndex={40}
-      w="full"
-      borderBottomWidth="1px"
-      bg="rgba(255,255,255,0.9)"
-      backdropFilter="blur(8px)"
+      top={{ base: 2, md: 4 }}
+      zIndex={50}
+      px={{ base: 3, md: 4 }}
     >
-      <Container maxW="7xl">
-        <Flex h={16} align="center" justify="space-between">
+      <Container maxW="7xl" px={0}>
+        <Flex
+          h={{ base: 14, md: 16 }}
+          align="center"
+          justify="space-between"
+          gap={4}
+          px={{ base: 4, md: 6 }}
+          rounded="2xl"
+          borderWidth="1px"
+          borderColor="rgba(255, 255, 255, 0.45)"
+          boxShadow="0 8px 32px rgba(15, 23, 42, 0.12)"
+          {...glass}
+        >
           <ChakraLink asChild aria-label={BUSINESS.name} _hover={{ textDecoration: 'none' }}>
             <NextLink href="/">
               <Image
@@ -50,7 +66,7 @@ export function Header() {
                 width={200}
                 height={80}
                 priority
-                style={{ height: 40, width: 'auto' }}
+                style={{ height: 36, width: 'auto' }}
               />
             </NextLink>
           </ChakraLink>
@@ -84,9 +100,14 @@ export function Header() {
                 </IconButton>
               </Drawer.Trigger>
               <Portal>
-                <Drawer.Backdrop />
+                <Drawer.Backdrop backdropFilter="blur(2px)" bg="rgba(15, 23, 42, 0.3)" />
                 <Drawer.Positioner>
-                  <Drawer.Content>
+                  <Drawer.Content
+                    borderLeftWidth="1px"
+                    borderColor="rgba(255, 255, 255, 0.4)"
+                    {...glass}
+                    bg="rgba(255, 255, 255, 0.72)"
+                  >
                     <Drawer.Header>
                       <Drawer.Title>{BUSINESS.name}</Drawer.Title>
                     </Drawer.Header>
@@ -100,7 +121,7 @@ export function Header() {
                             py={2}
                             rounded="md"
                             fontWeight="medium"
-                            _hover={{ bg: 'bg.subtle', textDecoration: 'none' }}
+                            _hover={{ bg: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}
                           >
                             <NextLink href={n.href} onClick={() => setOpen(false)}>
                               {n.label}
