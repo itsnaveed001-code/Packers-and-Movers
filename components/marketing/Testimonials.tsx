@@ -1,34 +1,38 @@
+import { Box, Container, SimpleGrid, Heading, Text, HStack } from '@chakra-ui/react';
 import { Star } from 'lucide-react';
 import { TESTIMONIALS } from '@/lib/constants';
 
 export function Testimonials() {
   return (
-    <section className="bg-secondary/50 py-16 sm:py-20">
-      <div className="container">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+    <Box as="section" bg="bg.subtle" py={{ base: 16, sm: 20 }}>
+      <Container maxW="7xl">
+        <Box maxW="2xl" mx="auto" textAlign="center">
+          <Heading as="h2" fontSize={{ base: '3xl', sm: '4xl' }} letterSpacing="tight">
             What our customers say
-          </h2>
-        </div>
+          </Heading>
+        </Box>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <SimpleGrid mt={12} columns={{ base: 1, md: 3 }} gap={6}>
           {TESTIMONIALS.map((t) => (
-            <figure key={t.name} className="rounded-2xl bg-white p-6 shadow-sm">
-              <div className="flex gap-0.5 text-amber-400">
+            <Box as="figure" key={t.name} rounded="2xl" bg="white" p={6} shadow="sm" m={0}>
+              <HStack gap={0.5} color="yellow.400">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-amber-400" />
+                  <Star key={i} size={16} fill="currentColor" />
                 ))}
-              </div>
-              <blockquote className="mt-3 text-sm text-foreground">
+              </HStack>
+              <Text as="blockquote" mt={3} fontSize="sm">
                 &ldquo;{t.quote}&rdquo;
-              </blockquote>
-              <figcaption className="mt-4 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{t.name}</span> · {t.city}
-              </figcaption>
-            </figure>
+              </Text>
+              <Text as="figcaption" mt={4} fontSize="xs" color="fg.muted">
+                <Text as="span" fontWeight="semibold" color="fg">
+                  {t.name}
+                </Text>{' '}
+                · {t.city}
+              </Text>
+            </Box>
           ))}
-        </div>
-      </div>
-    </section>
+        </SimpleGrid>
+      </Container>
+    </Box>
   );
 }

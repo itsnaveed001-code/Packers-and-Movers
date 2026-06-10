@@ -1,3 +1,13 @@
+import {
+  Box,
+  Container,
+  SimpleGrid,
+  Heading,
+  Text,
+  Stack,
+  HStack,
+  Link as ChakraLink,
+} from '@chakra-ui/react';
 import { Phone, Mail, MessageCircle, MapPin, Clock } from 'lucide-react';
 import { ContactForm } from '@/components/marketing/ContactForm';
 import { BUSINESS, HOURS } from '@/lib/constants';
@@ -15,92 +25,129 @@ export default function ContactPage() {
 
   return (
     <>
-      <section className="bg-gradient-to-b from-brand-50 to-white py-16">
-        <div className="container max-w-5xl">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Contact us</h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            We're here to help with any question — large move or small. The fastest way is WhatsApp.
-          </p>
-        </div>
-      </section>
+      <Box
+        as="section"
+        py={16}
+        bgGradient="to-b"
+        gradientFrom="brand.50"
+        gradientTo="white"
+      >
+        <Container maxW="5xl">
+          <Heading as="h1" fontSize={{ base: '4xl', sm: '5xl' }} letterSpacing="tight">
+            Contact us
+          </Heading>
+          <Text mt={3} maxW="2xl" color="fg.muted">
+            We&apos;re here to help with any question — large move or small. The fastest way is WhatsApp.
+          </Text>
+        </Container>
+      </Box>
 
-      <section className="py-12">
-        <div className="container grid max-w-5xl gap-10 lg:grid-cols-2">
-          <div>
-            <h2 className="text-xl font-semibold">Reach us directly</h2>
-            <ul className="mt-4 space-y-4 text-sm">
-              <li className="flex items-start gap-3">
-                <Phone className="mt-0.5 h-5 w-5 text-brand-600" />
-                <div>
-                  <p className="font-medium">Phone</p>
-                  <a href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`} className="text-brand-700 hover:underline">
+      <Box as="section" py={12}>
+        <Container maxW="5xl">
+          <SimpleGrid columns={{ base: 1, lg: 2 }} gap={10}>
+            <Box>
+              <Heading as="h2" fontSize="xl" fontWeight="semibold">
+                Reach us directly
+              </Heading>
+              <Stack mt={4} gap={4} fontSize="sm">
+                <ContactRow icon={Phone} label="Phone">
+                  <ContactLink href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`}>
                     {BUSINESS.phone}
-                  </a>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <MessageCircle className="mt-0.5 h-5 w-5 text-emerald-600" />
-                <div>
-                  <p className="font-medium">WhatsApp</p>
-                  <a
-                    href={whatsappUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-emerald-700 hover:underline"
-                  >
+                  </ContactLink>
+                </ContactRow>
+                <ContactRow icon={MessageCircle} label="WhatsApp" iconColor="green.600">
+                  <ContactLink href={whatsappUrl()} external color="green.700">
                     Chat with us
-                  </a>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <Mail className="mt-0.5 h-5 w-5 text-brand-600" />
-                <div>
-                  <p className="font-medium">Email</p>
-                  <a href={`mailto:${BUSINESS.email}`} className="text-brand-700 hover:underline">
+                  </ContactLink>
+                </ContactRow>
+                <ContactRow icon={Mail} label="Email">
+                  <ContactLink href={`mailto:${BUSINESS.email}`}>
                     {BUSINESS.email}
-                  </a>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <MapPin className="mt-0.5 h-5 w-5 text-brand-600" />
-                <div>
-                  <p className="font-medium">Office</p>
-                  <p className="text-muted-foreground">{BUSINESS.address}</p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <Clock className="mt-0.5 h-5 w-5 text-brand-600" />
-                <div>
-                  <p className="font-medium">Hours</p>
-                  <p className="text-muted-foreground">Mon–Sat: {HOURS.weekday}</p>
-                  <p className="text-muted-foreground">Sun: {HOURS.sunday}</p>
-                </div>
-              </li>
-            </ul>
+                  </ContactLink>
+                </ContactRow>
+                <ContactRow icon={MapPin} label="Office">
+                  <Text color="fg.muted">{BUSINESS.address}</Text>
+                </ContactRow>
+                <ContactRow icon={Clock} label="Hours">
+                  <Text color="fg.muted">Mon–Sat: {HOURS.weekday}</Text>
+                  <Text color="fg.muted">Sun: {HOURS.sunday}</Text>
+                </ContactRow>
+              </Stack>
 
-            <div className="mt-8 overflow-hidden rounded-2xl border">
-              <iframe
-                title="Office location"
-                src={mapsSrc}
-                width="100%"
-                height="280"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-          </div>
+              <Box mt={8} overflow="hidden" rounded="2xl" borderWidth="1px">
+                <iframe
+                  title="Office location"
+                  src={mapsSrc}
+                  width="100%"
+                  height="280"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  style={{ border: 0, display: 'block' }}
+                />
+              </Box>
+            </Box>
 
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">Send us a message</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              We usually reply within a few hours during business hours.
-            </p>
-            <div className="mt-5">
-              <ContactForm />
-            </div>
-          </div>
-        </div>
-      </section>
+            <Box rounded="2xl" borderWidth="1px" bg="white" p={6} shadow="sm">
+              <Heading as="h2" fontSize="xl" fontWeight="semibold">
+                Send us a message
+              </Heading>
+              <Text mt={1} fontSize="sm" color="fg.muted">
+                We usually reply within a few hours during business hours.
+              </Text>
+              <Box mt={5}>
+                <ContactForm />
+              </Box>
+            </Box>
+          </SimpleGrid>
+        </Container>
+      </Box>
     </>
+  );
+}
+
+function ContactRow({
+  icon: Icon,
+  label,
+  iconColor = 'brand.600',
+  children,
+}: {
+  icon: typeof Phone;
+  label: string;
+  iconColor?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <HStack align="start" gap={3}>
+      <Box pt="2px" color={iconColor}>
+        <Icon size={20} />
+      </Box>
+      <Box>
+        <Text fontWeight="medium">{label}</Text>
+        {children}
+      </Box>
+    </HStack>
+  );
+}
+
+function ContactLink({
+  href,
+  external,
+  color = 'brand.700',
+  children,
+}: {
+  href: string;
+  external?: boolean;
+  color?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <ChakraLink
+      href={href}
+      color={color}
+      _hover={{ textDecoration: 'underline' }}
+      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+    >
+      {children}
+    </ChakraLink>
   );
 }

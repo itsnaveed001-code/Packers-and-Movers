@@ -1,8 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { chakra, Box, Text, SimpleGrid, Skeleton } from '@chakra-ui/react';
 
 export type Slot = {
   time: string;
@@ -18,13 +17,30 @@ type FetchState =
   | { kind: 'ok'; slots: Slot[] }
   | { kind: 'error' };
 
+function Notice({ children, tone = 'muted' }: { children: React.ReactNode; tone?: 'muted' | 'error' }) {
+  return (
+    <Box
+      rounded="xl"
+      borderWidth="1px"
+      borderColor={tone === 'error' ? 'red.200' : 'border'}
+      bg={tone === 'error' ? 'red.50' : 'bg.subtle'}
+      p={6}
+      textAlign="center"
+      fontSize="sm"
+      color={tone === 'error' ? 'red.600' : 'fg.muted'}
+    >
+      {children}
+    </Box>
+  );
+}
+
 export function SlotPicker({
   date,
   serviceId,
   selectedTime,
   onSelect,
 }: {
-  date: string | null; // YYYY-MM-DD
+  date: string | null;
   serviceId: string | null;
   selectedTime: string | null;
   onSelect: (time: string) => void;
@@ -65,29 +81,21 @@ export function SlotPicker({
   }, [date, serviceId]);
 
   if (state.kind === 'idle') {
-    return (
-      <p className="rounded-xl border border-dashed bg-secondary/40 p-6 text-center text-sm text-muted-foreground">
-        Pick a date first.
-      </p>
-    );
+    return <Notice>Pick a date first.</Notice>;
   }
 
   if (state.kind === 'loading') {
     return (
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      <SimpleGrid columns={{ base: 3, sm: 4 }} gap={2}>
         {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 rounded-lg" />
+          <Skeleton key={i} height="48px" rounded="lg" />
         ))}
-      </div>
+      </SimpleGrid>
     );
   }
 
   if (state.kind === 'error') {
-    return (
-      <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
-        Couldn't load slots. Please try again.
-      </p>
-    );
+    return <Notice tone="error">Couldn&apos;t load slots. Please try again.</Notice>;
   }
 
   if (state.kind === 'empty') {
@@ -97,59 +105,64 @@ export function SlotPicker({
         : state.reason === 'non_working'
           ? 'No slots available on this day of the week.'
           : 'This date is in the past.';
-    return (
-      <p className="rounded-xl border bg-secondary/40 p-6 text-center text-sm text-muted-foreground">
-        {msg}
-      </p>
-    );
+    return <Notice>{msg}</Notice>;
   }
 
   if (state.slots.length === 0) {
-    return (
-      <p className="rounded-xl border bg-secondary/40 p-6 text-center text-sm text-muted-foreground">
-        No slots configured for this date.
-      </p>
-    );
+    return <Notice>No slots configured for this date.</Notice>;
   }
 
   const anyAvailable = state.slots.some((s) => s.available);
 
   return (
-    <div>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+    <Box>
+      <SimpleGrid columns={{ base: 3, sm: 4 }} gap={2}>
         {state.slots.map((slot) => {
           const isSelected = selectedTime === slot.time;
           const disabled = !slot.available;
           return (
-            <button
+            <chakra.button
               key={slot.time}
               type="button"
               disabled={disabled}
               onClick={() => onSelect(slot.time)}
-              className={cn(
-                'flex h-12 flex-col items-center justify-center rounded-lg border bg-white text-sm font-medium transition',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
-                isSelected && 'border-brand-600 bg-brand-50 ring-2 ring-brand-500/30',
-                !isSelected && !disabled && 'hover:border-brand-300',
-                disabled && 'cursor-not-allowed bg-secondary/40 text-muted-foreground opacity-70',
-              )}
               aria-pressed={isSelected}
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              justifyContent="center"
+              h={12}
+              rounded="lg"
+              borderWidth="1px"
+              bg={isSelected ? 'brand.50' : disabled ? 'bg.subtle' : 'white'}
+              borderColor={isSelected ? 'brand.600' : 'border'}
+              boxShadow={isSelected ? '0 0 0 3px rgba(70, 103, 156, 0.30)' : undefined}
+              fontSize="sm"
+              fontWeight="medium"
+              color={disabled ? 'fg.muted' : 'fg'}
+              cursor={disabled ? 'not-allowed' : 'pointer'}
+              opacity={disabled ? 0.7 : 1}
+              transition="all 0.15s"
+              _hover={!disabled && !isSelected ? { borderColor: 'brand.300' } : undefined}
+              _focusVisible={{ outline: '2px solid', outlineColor: 'brand.500', outlineOffset: '2px' }}
             >
-              <span className={cn(disabled && 'line-through')}>{slot.label}</span>
+              <Text as="span" textDecoration={disabled ? 'line-through' : undefined}>
+                {slot.label}
+              </Text>
               {disabled && (
-                <span className="text-[10px] font-normal uppercase tracking-wide">
+                <Text as="span" fontSize="10px" fontWeight="normal" textTransform="uppercase" letterSpacing="wide">
                   {slot.tooSoon ? 'Too soon' : 'Booked'}
-                </span>
+                </Text>
               )}
-            </button>
+            </chakra.button>
           );
         })}
-      </div>
+      </SimpleGrid>
       {!anyAvailable && (
-        <p className="mt-3 text-center text-sm text-muted-foreground">
+        <Text mt={3} textAlign="center" fontSize="sm" color="fg.muted">
           All slots are taken on this date. Try another day.
-        </p>
+        </Text>
       )}
-    </div>
+    </Box>
   );
 }

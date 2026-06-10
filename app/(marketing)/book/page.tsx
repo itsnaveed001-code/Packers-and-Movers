@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { Box, Container, Heading, Text } from '@chakra-ui/react';
 import { BookingFlow } from '@/components/booking/BookingFlow';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getActiveServices } from '@/lib/queries';
@@ -57,30 +58,42 @@ export default async function BookPage() {
   ]);
 
   return (
-    <section className="bg-secondary/40 py-8 sm:py-12">
-      <div className="container">
-        <div className="mx-auto mb-6 max-w-3xl text-center">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Book your move</h1>
-          <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+    <Box as="section" bg="bg.subtle" py={{ base: 8, sm: 12 }}>
+      <Container maxW="7xl">
+        <Box mx="auto" mb={6} maxW="3xl" textAlign="center">
+          <Heading as="h1" fontSize={{ base: '3xl', sm: '4xl' }} letterSpacing="tight">
+            Book your move
+          </Heading>
+          <Text mt={2} fontSize={{ base: 'sm', sm: 'md' }} color="fg.muted">
             Five quick steps. No payment now — pay on the day of service.
-          </p>
-        </div>
+          </Text>
+        </Box>
         {services.length === 0 ? (
-          <p className="mx-auto max-w-3xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <Box
+            mx="auto"
+            maxW="3xl"
+            rounded="xl"
+            borderWidth="1px"
+            borderColor="orange.200"
+            bg="orange.50"
+            p={4}
+            fontSize="sm"
+            color="orange.900"
+          >
             Booking is temporarily unavailable. Please call or WhatsApp us instead.
-          </p>
+          </Box>
         ) : (
           <Suspense
             fallback={
-              <p className="mx-auto max-w-3xl text-center text-sm text-muted-foreground">
+              <Text mx="auto" maxW="3xl" textAlign="center" fontSize="sm" color="fg.muted">
                 Loading…
-              </p>
+              </Text>
             }
           >
             <BookingFlow services={services} availability={availability} />
           </Suspense>
         )}
-      </div>
-    </section>
+      </Container>
+    </Box>
   );
 }

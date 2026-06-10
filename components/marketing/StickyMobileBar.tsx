@@ -1,33 +1,68 @@
-import Link from 'next/link';
+import NextLink from 'next/link';
+import { Box, Link as ChakraLink, HStack } from '@chakra-ui/react';
 import { Phone, MessageCircle, Calendar } from 'lucide-react';
 import { BUSINESS } from '@/lib/constants';
 
 export function StickyMobileBar() {
   return (
-    <div className="md:hidden sticky bottom-0 z-30 grid grid-cols-3 border-t bg-white">
-      <a
+    <Box
+      display={{ base: 'grid', md: 'none' }}
+      gridTemplateColumns="repeat(3, 1fr)"
+      position="sticky"
+      bottom={0}
+      zIndex={30}
+      borderTopWidth="1px"
+      bg="white"
+    >
+      <ChakraLink
         href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`}
-        className="flex items-center justify-center gap-2 border-r py-3 text-sm font-medium text-brand-700"
+        justifyContent="center"
+        borderRightWidth="1px"
+        py={3}
+        fontSize="sm"
+        fontWeight="medium"
+        color="brand.700"
+        _hover={{ textDecoration: 'none', bg: 'brand.50' }}
       >
-        <Phone className="h-4 w-4" />
-        Call
-      </a>
-      <a
+        <HStack gap={2}>
+          <Phone size={16} />
+          <span>Call</span>
+        </HStack>
+      </ChakraLink>
+      <ChakraLink
         href={`https://wa.me/${BUSINESS.whatsapp}`}
-        className="flex items-center justify-center gap-2 border-r py-3 text-sm font-medium text-emerald-700"
         target="_blank"
         rel="noopener noreferrer"
+        justifyContent="center"
+        borderRightWidth="1px"
+        py={3}
+        fontSize="sm"
+        fontWeight="medium"
+        color="green.700"
+        _hover={{ textDecoration: 'none', bg: 'green.50' }}
       >
-        <MessageCircle className="h-4 w-4" />
-        WhatsApp
-      </a>
-      <Link
-        href="/book"
-        className="flex items-center justify-center gap-2 bg-brand-600 py-3 text-sm font-semibold text-white"
+        <HStack gap={2}>
+          <MessageCircle size={16} />
+          <span>WhatsApp</span>
+        </HStack>
+      </ChakraLink>
+      <ChakraLink
+        asChild
+        justifyContent="center"
+        py={3}
+        fontSize="sm"
+        fontWeight="semibold"
+        bg="brand.600"
+        color="white"
+        _hover={{ textDecoration: 'none', bg: 'brand.700' }}
       >
-        <Calendar className="h-4 w-4" />
-        Book
-      </Link>
-    </div>
+        <NextLink href="/book">
+          <HStack gap={2}>
+            <Calendar size={16} />
+            <span>Book</span>
+          </HStack>
+        </NextLink>
+      </ChakraLink>
+    </Box>
   );
 }

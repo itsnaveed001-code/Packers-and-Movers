@@ -2,8 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from 'react';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Field, Input, Box } from '@chakra-ui/react';
 import { loadGoogleMaps, getMapsApiKey } from '@/lib/googleMaps';
 
 export type ResolvedAddress = {
@@ -122,8 +121,8 @@ export function AddressAutocomplete({
   }, [coords, mapsReady]);
 
   return (
-    <div>
-      <Label htmlFor={id}>{label}</Label>
+    <Field.Root invalid={!!error}>
+      <Field.Label htmlFor={id}>{label}</Field.Label>
       <Input
         id={id}
         ref={inputRef}
@@ -134,18 +133,21 @@ export function AddressAutocomplete({
           if (e.key === 'Enter') e.preventDefault();
         }}
         placeholder={placeholder}
-        aria-invalid={!!error}
         autoComplete="off"
-        className="mt-1.5"
       />
-      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      <Field.ErrorText>{error}</Field.ErrorText>
       {mapsReady && coords && (
-        <div
+        <Box
           ref={mapRef}
           aria-hidden
-          className="mt-2 h-40 w-full overflow-hidden rounded-lg border"
+          mt={2}
+          h="160px"
+          w="full"
+          overflow="hidden"
+          rounded="lg"
+          borderWidth="1px"
         />
       )}
-    </div>
+    </Field.Root>
   );
 }

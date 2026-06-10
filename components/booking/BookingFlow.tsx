@@ -3,9 +3,17 @@
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/toast';
+import {
+  Box,
+  Card,
+  Heading,
+  Button,
+  Stack,
+  SimpleGrid,
+  Flex,
+  Text,
+} from '@chakra-ui/react';
+import { toaster } from '@/components/Toaster';
 import { StepIndicator, type Step } from './StepIndicator';
 import { ServicePicker } from './ServicePicker';
 import { BookingDatePicker } from './BookingDatePicker';
@@ -41,9 +49,7 @@ export function BookingFlow({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { show } = useToast();
 
-  // Preselect from ?service=slug
   const initialServiceId = React.useMemo(() => {
     const slug = searchParams.get('service');
     if (slug) {
@@ -53,7 +59,7 @@ export function BookingFlow({
     return services[0]?.id ?? null;
   }, [searchParams, services]);
 
-  const [step, setStep] = React.useState<number>(initialServiceId ? 1 : 1);
+  const [step, setStep] = React.useState<number>(1);
   const [serviceId, setServiceId] = React.useState<string | null>(initialServiceId);
   const [date, setDate] = React.useState<Date | undefined>(undefined);
   const [time, setTime] = React.useState<string | null>(null);
@@ -72,13 +78,12 @@ export function BookingFlow({
 
   function selectService(id: string) {
     setServiceId(id);
-    // Reset time if service changes — the slot landscape may differ.
     setTime(null);
   }
 
   function selectDate(d: Date | undefined) {
     setDate(d);
-    setTime(null); // changing date invalidates time
+    setTime(null);
     if (d) next();
   }
 
@@ -114,11 +119,10 @@ export function BookingFlow({
       }
 
       if (res.status === 409) {
-        // Slot taken — kick back to slot picker with a fresh fetch.
         setTime(null);
         setStep(3);
-        show({
-          variant: 'error',
+        toaster.create({
+          type: 'error',
           title: 'That slot was just taken',
           description: 'Please pick a different time.',
         });
@@ -126,16 +130,16 @@ export function BookingFlow({
       }
 
       const body = (await res.json().catch(() => ({}))) as { error?: string };
-      show({
-        variant: 'error',
+      toaster.create({
+        type: 'error',
         title: "Couldn't complete booking",
         description: body.error
           ? `Reason: ${body.error.replace(/_/g, ' ')}`
           : 'Please try again in a moment.',
       });
     } catch {
-      show({
-        variant: 'error',
+      toaster.create({
+        type: 'error',
         title: 'Network error',
         description: 'Please check your connection and try again.',
       });
@@ -145,98 +149,100 @@ export function BookingFlow({
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-6 rounded-2xl border bg-white p-4 sm:p-5 shadow-sm">
+    <Box mx="auto" maxW="3xl">
+      <Box mb={6} rounded="2xl" borderWidth="1px" bg="white" p={{ base: 4, sm: 5 }} shadow="sm">
         <StepIndicator steps={STEPS} current={step} />
-      </div>
+      </Box>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
+      <Card.Root>
+        <Card.Header>
+          <Card.Title>
             {step === 1 && 'Choose a service'}
             {step === 2 && 'Pick a date'}
             {step === 3 && 'Pick a time'}
             {step === 4 && 'Your details'}
             {step === 5 && 'Review & confirm'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {step === 1 && (
-            <>
-              <ServicePicker
-                services={services}
-                selectedId={serviceId}
-                onSelect={selectService}
+          </Card.Title>
+        </Card.Header>
+        <Card.Body>
+          <Stack gap={5}>
+            {step === 1 && (
+              <>
+                <ServicePicker
+                  services={services}
+                  selectedId={serviceId}
+                  onSelect={selectService}
+                />
+                <Flex justify="flex-end">
+                  <Button onClick={next} colorPalette="brand" disabled={!serviceId}>
+                    Continue
+                  </Button>
+                </Flex>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <BookingDatePicker
+                  selected={date}
+                  onSelect={selectDate}
+                  blockedDates={availability.blockedDates}
+                  workingDays={availability.workingDays}
+                  maxAdvanceDays={availability.advanceBookingDays}
+                />
+                <Flex justify="space-between">
+                  <Button variant="outline" onClick={back}>
+                    Back
+                  </Button>
+                  <Button onClick={next} colorPalette="brand" disabled={!date}>
+                    Continue
+                  </Button>
+                </Flex>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <SlotPicker
+                  date={isoSelectedDate}
+                  serviceId={serviceId}
+                  selectedTime={time}
+                  onSelect={selectTime}
+                />
+                <Flex justify="space-between">
+                  <Button variant="outline" onClick={back}>
+                    Back
+                  </Button>
+                  <Button onClick={next} colorPalette="brand" disabled={!time}>
+                    Continue
+                  </Button>
+                </Flex>
+              </>
+            )}
+
+            {step === 4 && (
+              <CustomerForm
+                defaultValues={customer ?? undefined}
+                onBack={back}
+                onSubmit={handleCustomerSubmit}
               />
-              <div className="flex justify-end">
-                <Button onClick={next} disabled={!serviceId}>
-                  Continue
-                </Button>
-              </div>
-            </>
-          )}
+            )}
 
-          {step === 2 && (
-            <>
-              <BookingDatePicker
-                selected={date}
-                onSelect={selectDate}
-                blockedDates={availability.blockedDates}
-                workingDays={availability.workingDays}
-                maxAdvanceDays={availability.advanceBookingDays}
+            {step === 5 && customer && selectedService && date && time && (
+              <ReviewStep
+                service={selectedService}
+                date={date}
+                time={time}
+                customer={customer}
+                onBack={back}
+                onConfirm={confirmBooking}
+                submitting={submitting}
               />
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={back}>
-                  Back
-                </Button>
-                <Button onClick={next} disabled={!date}>
-                  Continue
-                </Button>
-              </div>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <SlotPicker
-                date={isoSelectedDate}
-                serviceId={serviceId}
-                selectedTime={time}
-                onSelect={selectTime}
-              />
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={back}>
-                  Back
-                </Button>
-                <Button onClick={next} disabled={!time}>
-                  Continue
-                </Button>
-              </div>
-            </>
-          )}
-
-          {step === 4 && (
-            <CustomerForm
-              defaultValues={customer ?? undefined}
-              onBack={back}
-              onSubmit={handleCustomerSubmit}
-            />
-          )}
-
-          {step === 5 && customer && selectedService && date && time && (
-            <ReviewStep
-              service={selectedService}
-              date={date}
-              time={time}
-              customer={customer}
-              onBack={back}
-              onConfirm={confirmBooking}
-              submitting={submitting}
-            />
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            )}
+          </Stack>
+        </Card.Body>
+      </Card.Root>
+    </Box>
   );
 }
 
@@ -258,80 +264,94 @@ function ReviewStep({
   submitting: boolean;
 }) {
   return (
-    <div className="space-y-5">
-      <div className="rounded-xl border bg-secondary/30 p-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Service" value={service.name} />
-          <Field label="Date" value={format(date, 'EEEE, d MMM yyyy')} />
-          <Field label="Time" value={formatTimeLabel(time)} />
-          <Field label="Duration" value={`${service.duration_hours} hours (estimate)`} />
-        </div>
-      </div>
+    <Stack gap={5}>
+      <Box rounded="xl" borderWidth="1px" bg="bg.subtle" p={4}>
+        <SimpleGrid columns={{ base: 1, sm: 2 }} gap={3}>
+          <ReviewItem label="Service" value={service.name} />
+          <ReviewItem label="Date" value={format(date, 'EEEE, d MMM yyyy')} />
+          <ReviewItem label="Time" value={formatTimeLabel(time)} />
+          <ReviewItem label="Duration" value={`${service.duration_hours} hours (estimate)`} />
+        </SimpleGrid>
+      </Box>
 
-      <div className="rounded-xl border bg-white p-4">
-        <h4 className="text-sm font-semibold">Your contact</h4>
-        <div className="mt-2 grid gap-3 text-sm sm:grid-cols-2">
-          <Field label="Name" value={customer.customer_name} />
-          <Field label="Phone" value={customer.customer_phone} />
-          <Field label="Email" value={customer.customer_email} compact />
-        </div>
-      </div>
+      <Box rounded="xl" borderWidth="1px" bg="white" p={4}>
+        <Heading as="h4" fontSize="sm" fontWeight="semibold">
+          Your contact
+        </Heading>
+        <SimpleGrid mt={2} columns={{ base: 1, sm: 2 }} gap={3}>
+          <ReviewItem label="Name" value={customer.customer_name} />
+          <ReviewItem label="Phone" value={customer.customer_phone} />
+          <ReviewItem label="Email" value={customer.customer_email} full />
+        </SimpleGrid>
+      </Box>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border bg-white p-4">
-          <h4 className="text-sm font-semibold">Pickup</h4>
-          <p className="mt-1 text-sm">
+      <SimpleGrid columns={{ base: 1, sm: 2 }} gap={3}>
+        <Box rounded="xl" borderWidth="1px" bg="white" p={4}>
+          <Heading as="h4" fontSize="sm" fontWeight="semibold">
+            Pickup
+          </Heading>
+          <Text mt={1} fontSize="sm">
             {customer.pickup_address}
             <br />
             {customer.pickup_city} — {customer.pickup_pincode}
-          </p>
-        </div>
-        <div className="rounded-xl border bg-white p-4">
-          <h4 className="text-sm font-semibold">Drop-off</h4>
-          <p className="mt-1 text-sm">
+          </Text>
+        </Box>
+        <Box rounded="xl" borderWidth="1px" bg="white" p={4}>
+          <Heading as="h4" fontSize="sm" fontWeight="semibold">
+            Drop-off
+          </Heading>
+          <Text mt={1} fontSize="sm">
             {customer.dropoff_address}
             <br />
             {customer.dropoff_city} — {customer.dropoff_pincode}
-          </p>
-        </div>
-      </div>
+          </Text>
+        </Box>
+      </SimpleGrid>
 
       {customer.notes && (
-        <div className="rounded-xl border bg-white p-4">
-          <h4 className="text-sm font-semibold">Notes</h4>
-          <p className="mt-1 text-sm text-muted-foreground">{customer.notes}</p>
-        </div>
+        <Box rounded="xl" borderWidth="1px" bg="white" p={4}>
+          <Heading as="h4" fontSize="sm" fontWeight="semibold">
+            Notes
+          </Heading>
+          <Text mt={1} fontSize="sm" color="fg.muted">
+            {customer.notes}
+          </Text>
+        </Box>
       )}
 
-      <p className="rounded-md bg-brand-50 px-3 py-2 text-xs text-brand-900">
-        No payment is needed now. We'll call you within 2 hours to confirm the price and your booking.
-      </p>
+      <Box rounded="md" bg="brand.50" px={3} py={2} fontSize="xs" color="brand.900">
+        No payment is needed now. We&apos;ll call you within 2 hours to confirm the price and your booking.
+      </Box>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+      <Flex direction={{ base: 'column', sm: 'row' }} justify="space-between" gap={2}>
         <Button variant="outline" onClick={onBack} disabled={submitting}>
           Back
         </Button>
-        <Button onClick={onConfirm} disabled={submitting} size="lg">
-          {submitting ? 'Confirming…' : 'Confirm booking'}
+        <Button onClick={onConfirm} loading={submitting} loadingText="Confirming…" colorPalette="brand" size="lg">
+          Confirm booking
         </Button>
-      </div>
-    </div>
+      </Flex>
+    </Stack>
   );
 }
 
-function Field({
+function ReviewItem({
   label,
   value,
-  compact,
+  full,
 }: {
   label: string;
   value: string;
-  compact?: boolean;
+  full?: boolean;
 }) {
   return (
-    <div className={compact ? 'col-span-full' : ''}>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
+    <Box gridColumn={full ? { sm: '1 / -1' } : undefined}>
+      <Text fontSize="xs" textTransform="uppercase" letterSpacing="wide" color="fg.muted">
+        {label}
+      </Text>
+      <Text fontSize="sm" fontWeight="medium">
+        {value}
+      </Text>
+    </Box>
   );
 }

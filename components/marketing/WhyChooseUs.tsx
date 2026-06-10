@@ -1,6 +1,8 @@
+import { Box, Container, SimpleGrid, Heading, Text, Flex } from '@chakra-ui/react';
 import { Shield, BadgeCheck, Clock, Wallet } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const PILLARS = [
+const PILLARS: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: BadgeCheck,
     title: 'Verified team',
@@ -25,29 +27,41 @@ const PILLARS = [
 
 export function WhyChooseUs() {
   return (
-    <section className="bg-secondary/50 py-16 sm:py-20">
-      <div className="container">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+    <Box as="section" bg="bg.subtle" py={{ base: 16, sm: 20 }}>
+      <Container maxW="7xl">
+        <Box maxW="2xl" mx="auto" textAlign="center">
+          <Heading as="h2" fontSize={{ base: '3xl', sm: '4xl' }} letterSpacing="tight">
             Why customers choose us
-          </h2>
-          <p className="mt-3 text-muted-foreground">
+          </Heading>
+          <Text mt={3} color="fg.muted">
             Four things we never compromise on.
-          </p>
-        </div>
+          </Text>
+        </Box>
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <SimpleGrid mt={12} columns={{ base: 1, sm: 2, lg: 4 }} gap={6}>
           {PILLARS.map(({ icon: Icon, title, body }) => (
-            <div key={title} className="rounded-2xl bg-white p-6 shadow-sm">
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50">
-                <Icon className="h-5 w-5 text-brand-600" />
-              </div>
-              <h3 className="mt-4 text-base font-semibold">{title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{body}</p>
-            </div>
+            <Box key={title} rounded="2xl" bg="white" p={6} shadow="sm">
+              <Flex
+                align="center"
+                justify="center"
+                h={11}
+                w={11}
+                rounded="xl"
+                bg="brand.50"
+                color="brand.600"
+              >
+                <Icon size={20} />
+              </Flex>
+              <Heading as="h3" mt={4} fontSize="md" fontWeight="semibold">
+                {title}
+              </Heading>
+              <Text mt={1} fontSize="sm" color="fg.muted">
+                {body}
+              </Text>
+            </Box>
           ))}
-        </div>
-      </div>
-    </section>
+        </SimpleGrid>
+      </Container>
+    </Box>
   );
 }

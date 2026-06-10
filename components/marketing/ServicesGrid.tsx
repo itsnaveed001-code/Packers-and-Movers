@@ -1,10 +1,28 @@
-import Link from 'next/link';
-import { ArrowRight, Truck, Home, Car, Package, Route, Building2, Lock } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import type { Service } from '@/types/database';
-import { cn } from '@/lib/utils';
-import { isComingSoon, PRIMARY_CITY } from '@/lib/constants';
+import NextLink from 'next/link';
+import {
+  Box,
+  Container,
+  SimpleGrid,
+  Heading,
+  Text,
+  Flex,
+  HStack,
+  Badge,
+  Link as ChakraLink,
+} from '@chakra-ui/react';
+import {
+  ArrowRight,
+  Truck,
+  Home,
+  Car,
+  Package,
+  Route,
+  Building2,
+  Lock,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { Service } from '@/types/database';
+import { isComingSoon, PRIMARY_CITY } from '@/lib/constants';
 
 const ICONS: Record<string, LucideIcon> = {
   truck: Truck,
@@ -17,75 +35,98 @@ const ICONS: Record<string, LucideIcon> = {
 
 function ServiceIcon({ name }: { name: string }) {
   const Icon = ICONS[name] || Truck;
-  return <Icon className="h-6 w-6 text-brand-600" />;
+  return <Icon size={24} />;
 }
 
-export function ServicesGrid({
-  services,
-  className,
-}: {
-  services: Service[];
-  className?: string;
-}) {
+function ServiceCard({ service, soon }: { service: Service; soon: boolean }) {
   return (
-    <section className={cn('py-16 sm:py-20', className)}>
-      <div className="container">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Services we offer
-          </h2>
-          <p className="mt-3 text-muted-foreground">
-            From single-room moves to multi-city office relocations — we have you covered.
-          </p>
-        </div>
+    <Box
+      h="full"
+      rounded="2xl"
+      borderWidth="1px"
+      bg="white"
+      p={6}
+      shadow="sm"
+      opacity={soon ? 0.75 : 1}
+      transition="box-shadow 0.2s, border-color 0.2s"
+      _hover={soon ? undefined : { shadow: 'md', borderColor: 'brand.300' }}
+    >
+      <Flex mb={4} align="center" justify="space-between">
+        <Flex
+          align="center"
+          justify="center"
+          h={12}
+          w={12}
+          rounded="xl"
+          bg="brand.50"
+          color="brand.600"
+        >
+          <ServiceIcon name={service.icon_name} />
+        </Flex>
+        {soon && (
+          <Badge colorPalette="gray" variant="subtle" rounded="full" px={2.5} py={1}>
+            <Lock size={12} /> Coming soon
+          </Badge>
+        )}
+      </Flex>
+      <Heading as="h3" fontSize="lg" fontWeight="semibold">
+        {service.name}
+      </Heading>
+      <Text mt={1.5} fontSize="sm" color="fg.muted">
+        {service.short_description}
+      </Text>
+      {soon ? (
+        <Text mt={4} fontSize="sm" fontWeight="medium" color="fg.muted">
+          Launching in {PRIMARY_CITY} soon
+        </Text>
+      ) : (
+        <HStack mt={4} gap={1} fontSize="sm" fontWeight="medium" color="brand.700">
+          Learn more <ArrowRight size={16} />
+        </HStack>
+      )}
+    </Box>
+  );
+}
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+export function ServicesGrid({ services }: { services: Service[] }) {
+  return (
+    <Box as="section" py={{ base: 16, sm: 20 }}>
+      <Container maxW="7xl">
+        <Box maxW="2xl" mx="auto" textAlign="center">
+          <Heading as="h2" fontSize={{ base: '3xl', sm: '4xl' }} letterSpacing="tight">
+            Services we offer
+          </Heading>
+          <Text mt={3} color="fg.muted">
+            From single-room moves to multi-city office relocations — we have you covered.
+          </Text>
+        </Box>
+
+        <SimpleGrid mt={12} columns={{ base: 1, sm: 2, lg: 3 }} gap={5}>
           {services.map((service) => {
             const soon = isComingSoon(service.slug);
-            const card = (
-              <Card
-                className={cn(
-                  'h-full p-6 transition-shadow',
-                  soon ? 'opacity-75' : 'hover:shadow-md',
-                )}
+            if (soon) {
+              return (
+                <Box key={service.id} aria-disabled="true" cursor="not-allowed">
+                  <ServiceCard service={service} soon />
+                </Box>
+              );
+            }
+            return (
+              <ChakraLink
+                key={service.id}
+                asChild
+                _hover={{ textDecoration: 'none' }}
+                display="block"
+                h="full"
               >
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50">
-                    <ServiceIcon name={service.icon_name} />
-                  </div>
-                  {soon && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                      <Lock className="h-3 w-3" /> Coming soon
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-lg font-semibold">{service.name}</h3>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                  {service.short_description}
-                </p>
-                {soon ? (
-                  <p className="mt-4 text-sm font-medium text-muted-foreground">
-                    Launching in {PRIMARY_CITY} soon
-                  </p>
-                ) : (
-                  <p className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-700 transition-all group-hover:gap-2">
-                    Learn more <ArrowRight className="h-4 w-4" />
-                  </p>
-                )}
-              </Card>
-            );
-            return soon ? (
-              <div key={service.id} aria-disabled="true" className="cursor-not-allowed">
-                {card}
-              </div>
-            ) : (
-              <Link key={service.id} href={`/services/${service.slug}`} className="group">
-                {card}
-              </Link>
+                <NextLink href={`/services/${service.slug}`}>
+                  <ServiceCard service={service} soon={false} />
+                </NextLink>
+              </ChakraLink>
             );
           })}
-        </div>
-      </div>
-    </section>
+        </SimpleGrid>
+      </Container>
+    </Box>
   );
 }

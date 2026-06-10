@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { Box, Text } from '@chakra-ui/react';
 import { Calendar } from '@/components/ui/calendar';
 
 export function BookingDatePicker({
@@ -12,8 +13,8 @@ export function BookingDatePicker({
 }: {
   selected: Date | undefined;
   onSelect: (d: Date | undefined) => void;
-  blockedDates: string[];                // ISO YYYY-MM-DD
-  workingDays: number[];                 // 0..6, Sun=0
+  blockedDates: string[]; // ISO YYYY-MM-DD
+  workingDays: number[]; // 0..6, Sun=0
   maxAdvanceDays: number;
 }) {
   const today = React.useMemo(() => {
@@ -44,7 +45,9 @@ export function BookingDatePicker({
   );
 
   return (
-    <div className="rounded-xl border bg-white p-2">
+    <Box rounded="xl" borderWidth="1px" bg="white" p={2}>
+      {/* react-day-picker (shadcn Calendar) kept here intentionally — it is a
+          third-party date picker, restyled to Chakra in Phase 5. */}
       <Calendar
         mode="single"
         selected={selected}
@@ -54,9 +57,9 @@ export function BookingDatePicker({
         fromDate={today}
         toDate={max}
       />
-      <p className="border-t px-3 py-2 text-xs text-muted-foreground">
+      <Text borderTopWidth="1px" px={3} py={2} fontSize="xs" color="fg.muted">
         Greyed-out dates are closed or fully booked.
-      </p>
-    </div>
+      </Text>
+    </Box>
   );
 }
