@@ -1,73 +1,142 @@
-import Link from 'next/link';
+import NextLink from 'next/link';
+import {
+  Box,
+  Container,
+  SimpleGrid,
+  Stack,
+  HStack,
+  Flex,
+  Heading,
+  Text,
+  Link as ChakraLink,
+} from '@chakra-ui/react';
 import { Truck, Phone, Mail, MapPin } from 'lucide-react';
 import { BUSINESS, PRIMARY_CITY, SERVICE_AREAS } from '@/lib/constants';
+
+const SERVICE_LINKS = [
+  { href: '/services/home-shifting', label: 'Home shifting' },
+  { href: '/services/office-shifting', label: 'Office shifting' },
+  { href: '/services/vehicle-transport', label: 'Vehicle transport' },
+  { href: '/services/intercity-moves', label: 'Intercity moves' },
+  { href: '/services/storage', label: 'Storage' },
+];
 
 export function Footer() {
   const year = new Date().getFullYear();
   return (
-    <footer className="border-t bg-brand-900 text-brand-50">
-      <div className="container py-12">
-        <div className="grid gap-10 md:grid-cols-4">
-          <div>
-            <Link href="/" className="flex items-center gap-2 text-white">
-              <Truck className="h-6 w-6" />
-              <span className="text-lg font-semibold">{BUSINESS.name}</span>
-            </Link>
-            <p className="mt-3 text-sm text-brand-100/80">
+    <Box as="footer" bg="brand.900" color="brand.50" borderTopWidth="1px">
+      <Container maxW="7xl" py={12}>
+        <SimpleGrid columns={{ base: 1, md: 4 }} gap={10}>
+          <Stack gap={3}>
+            <ChakraLink asChild color="white" _hover={{ textDecoration: 'none' }}>
+              <NextLink href="/">
+                <HStack gap={2}>
+                  <Truck size={22} />
+                  <Text fontSize="lg" fontWeight="semibold">
+                    {BUSINESS.name}
+                  </Text>
+                </HStack>
+              </NextLink>
+            </ChakraLink>
+            <Text fontSize="sm" color="brand.100" opacity={0.85}>
               {BUSINESS.tagline}.
-            </p>
-          </div>
+            </Text>
+          </Stack>
 
-          <div>
-            <h4 className="mb-3 text-sm font-semibold text-white">Services</h4>
-            <ul className="space-y-1.5 text-sm text-brand-100/80">
-              <li><Link href="/services/home-shifting" className="hover:text-white">Home shifting</Link></li>
-              <li><Link href="/services/office-shifting" className="hover:text-white">Office shifting</Link></li>
-              <li><Link href="/services/vehicle-transport" className="hover:text-white">Vehicle transport</Link></li>
-              <li><Link href="/services/intercity-moves" className="hover:text-white">Intercity moves</Link></li>
-              <li><Link href="/services/storage" className="hover:text-white">Storage</Link></li>
-            </ul>
-          </div>
+          <Box>
+            <Heading as="h4" size="sm" color="white" mb={3}>
+              Services
+            </Heading>
+            <Stack as="ul" gap={1.5} listStyleType="none">
+              {SERVICE_LINKS.map((s) => (
+                <li key={s.href}>
+                  <ChakraLink
+                    asChild
+                    fontSize="sm"
+                    color="brand.100"
+                    _hover={{ color: 'white' }}
+                  >
+                    <NextLink href={s.href}>{s.label}</NextLink>
+                  </ChakraLink>
+                </li>
+              ))}
+            </Stack>
+          </Box>
 
-          <div>
-            <h4 className="mb-3 text-sm font-semibold text-white">Service Areas</h4>
-            <p className="text-sm text-brand-100/80">
+          <Box>
+            <Heading as="h4" size="sm" color="white" mb={3}>
+              Service Areas
+            </Heading>
+            <Text fontSize="sm" color="brand.100" opacity={0.85}>
               Serving all of {PRIMARY_CITY} — including{' '}
               {SERVICE_AREAS.slice(0, 6).join(', ')}, and more.
-            </p>
-          </div>
+            </Text>
+          </Box>
 
-          <div>
-            <h4 className="mb-3 text-sm font-semibold text-white">Get in touch</h4>
-            <ul className="space-y-2 text-sm text-brand-100/80">
-              <li className="flex items-start gap-2">
-                <Phone className="mt-0.5 h-4 w-4 shrink-0" />
-                <a href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`} className="hover:text-white">
+          <Box>
+            <Heading as="h4" size="sm" color="white" mb={3}>
+              Get in touch
+            </Heading>
+            <Stack gap={2} fontSize="sm" color="brand.100">
+              <HStack align="start" gap={2}>
+                <Box pt="2px">
+                  <Phone size={16} />
+                </Box>
+                <ChakraLink
+                  href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`}
+                  color="brand.100"
+                  _hover={{ color: 'white' }}
+                >
                   {BUSINESS.phone}
-                </a>
-              </li>
-              <li className="flex items-start gap-2">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0" />
-                <a href={`mailto:${BUSINESS.email}`} className="hover:text-white">
+                </ChakraLink>
+              </HStack>
+              <HStack align="start" gap={2}>
+                <Box pt="2px">
+                  <Mail size={16} />
+                </Box>
+                <ChakraLink
+                  href={`mailto:${BUSINESS.email}`}
+                  color="brand.100"
+                  _hover={{ color: 'white' }}
+                >
                   {BUSINESS.email}
-                </a>
-              </li>
-              <li className="flex items-start gap-2">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{BUSINESS.address}</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+                </ChakraLink>
+              </HStack>
+              <HStack align="start" gap={2}>
+                <Box pt="2px">
+                  <MapPin size={16} />
+                </Box>
+                <Text>{BUSINESS.address}</Text>
+              </HStack>
+            </Stack>
+          </Box>
+        </SimpleGrid>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-brand-800 pt-6 text-xs text-brand-100/60 md:flex-row">
-          <p>© {year} {BUSINESS.name}. All rights reserved.</p>
-          <p className="flex gap-4">
-            <Link href="/contact" className="hover:text-white">Contact</Link>
-            <Link href="/about" className="hover:text-white">About</Link>
-          </p>
-        </div>
-      </div>
-    </footer>
+        <Flex
+          mt={10}
+          pt={6}
+          borderTopWidth="1px"
+          borderColor="brand.800"
+          direction={{ base: 'column', md: 'row' }}
+          align="center"
+          justify="space-between"
+          gap={3}
+          fontSize="xs"
+          color="brand.100"
+        >
+          <Text opacity={0.7}>
+            © {year} {BUSINESS.name}. All rights reserved.
+          </Text>
+          <HStack gap={4} opacity={0.85}>
+            <ChakraLink asChild _hover={{ color: 'white' }}>
+              <NextLink href="/contact">Contact</NextLink>
+            </ChakraLink>
+            <ChakraLink asChild _hover={{ color: 'white' }}>
+              <NextLink href="/about">About</NextLink>
+            </ChakraLink>
+          </HStack>
+        </Flex>
+      </Container>
+    </Box>
   );
 }

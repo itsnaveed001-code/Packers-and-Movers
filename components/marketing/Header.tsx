@@ -1,12 +1,23 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import Image from 'next/image';
-import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import {
+  Box,
+  Container,
+  Flex,
+  HStack,
+  Stack,
+  Button,
+  IconButton,
+  CloseButton,
+  Drawer,
+  Portal,
+  Link as ChakraLink,
+} from '@chakra-ui/react';
+import { Menu } from 'lucide-react';
 import { BUSINESS } from '@/lib/constants';
-import { cn } from '@/lib/utils';
 
 const NAV = [
   { href: '/', label: 'Home' },
@@ -17,72 +28,102 @@ const NAV = [
 
 export function Header() {
   const [open, setOpen] = React.useState(false);
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur">
-      <div className="container flex h-16 items-center justify-between">
-        <Link href="/" aria-label={BUSINESS.name} className="flex items-center">
-          <Image
-            src="/LOGO01.svg"
-            alt={BUSINESS.name}
-            width={200}
-            height={80}
-            priority
-            className="h-9 w-auto sm:h-10"
-          />
-        </Link>
+    <Box
+      as="header"
+      position="sticky"
+      top={0}
+      zIndex={40}
+      w="full"
+      borderBottomWidth="1px"
+      bg="rgba(255,255,255,0.9)"
+      backdropFilter="blur(8px)"
+    >
+      <Container maxW="7xl">
+        <Flex h={16} align="center" justify="space-between">
+          <ChakraLink asChild aria-label={BUSINESS.name} _hover={{ textDecoration: 'none' }}>
+            <NextLink href="/">
+              <Image
+                src="/LOGO01.svg"
+                alt={BUSINESS.name}
+                width={200}
+                height={80}
+                priority
+                style={{ height: 40, width: 'auto' }}
+              />
+            </NextLink>
+          </ChakraLink>
 
-        <nav className="hidden items-center gap-7 md:flex" aria-label="Main">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="text-sm font-medium text-foreground/80 hover:text-brand-700"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+          <HStack as="nav" gap={7} display={{ base: 'none', md: 'flex' }} aria-label="Main">
+            {NAV.map((n) => (
+              <ChakraLink
+                key={n.href}
+                asChild
+                fontSize="sm"
+                fontWeight="medium"
+                color="fg.muted"
+                _hover={{ color: 'brand.700', textDecoration: 'none' }}
+              >
+                <NextLink href={n.href}>{n.label}</NextLink>
+              </ChakraLink>
+            ))}
+          </HStack>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <Button asChild size="sm">
-            <Link href="/book">Book Now</Link>
-          </Button>
-        </div>
+          <HStack display={{ base: 'none', md: 'flex' }} gap={2}>
+            <Button asChild size="sm" colorPalette="brand">
+              <NextLink href="/book">Book Now</NextLink>
+            </Button>
+          </HStack>
 
-        <button
-          className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-lg hover:bg-secondary"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Toggle menu"
-          aria-expanded={open}
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-      </div>
-
-      <div
-        className={cn(
-          'md:hidden border-t bg-white',
-          open ? 'block' : 'hidden',
-        )}
-      >
-        <nav className="container flex flex-col gap-1 py-3" aria-label="Mobile">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="rounded-md px-2 py-2 text-sm font-medium hover:bg-secondary"
-              onClick={() => setOpen(false)}
-            >
-              {n.label}
-            </Link>
-          ))}
-          <Button asChild className="mt-2">
-            <Link href="/book" onClick={() => setOpen(false)}>
-              Book Now
-            </Link>
-          </Button>
-        </nav>
-      </div>
-    </header>
+          <Box display={{ base: 'block', md: 'none' }}>
+            <Drawer.Root open={open} onOpenChange={(e) => setOpen(e.open)} placement="end">
+              <Drawer.Trigger asChild>
+                <IconButton aria-label="Open menu" variant="ghost" size="sm">
+                  <Menu />
+                </IconButton>
+              </Drawer.Trigger>
+              <Portal>
+                <Drawer.Backdrop />
+                <Drawer.Positioner>
+                  <Drawer.Content>
+                    <Drawer.Header>
+                      <Drawer.Title>{BUSINESS.name}</Drawer.Title>
+                    </Drawer.Header>
+                    <Drawer.Body>
+                      <Stack gap={1}>
+                        {NAV.map((n) => (
+                          <ChakraLink
+                            key={n.href}
+                            asChild
+                            px={2}
+                            py={2}
+                            rounded="md"
+                            fontWeight="medium"
+                            _hover={{ bg: 'bg.subtle', textDecoration: 'none' }}
+                          >
+                            <NextLink href={n.href} onClick={() => setOpen(false)}>
+                              {n.label}
+                            </NextLink>
+                          </ChakraLink>
+                        ))}
+                        <Button asChild mt={2} colorPalette="brand">
+                          <NextLink href="/book" onClick={() => setOpen(false)}>
+                            Book Now
+                          </NextLink>
+                        </Button>
+                      </Stack>
+                    </Drawer.Body>
+                    <Drawer.CloseTrigger asChild>
+                      <CloseButton size="sm" />
+                    </Drawer.CloseTrigger>
+                  </Drawer.Content>
+                </Drawer.Positioner>
+              </Portal>
+            </Drawer.Root>
+          </Box>
+        </Flex>
+      </Container>
+    </Box>
   );
 }

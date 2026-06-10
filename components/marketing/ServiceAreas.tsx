@@ -1,31 +1,51 @@
+import { Box, Container, SimpleGrid, Heading, Text, HStack } from '@chakra-ui/react';
 import { MapPin } from 'lucide-react';
 import { SERVICE_AREAS, PRIMARY_CITY } from '@/lib/constants';
 
 export function ServiceAreas() {
   return (
-    <section className="py-16 sm:py-20">
-      <div className="container">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+    <Box as="section" py={{ base: 16, sm: 20 }}>
+      <Container maxW="7xl">
+        <Box maxW="2xl" mx="auto" textAlign="center">
+          <Heading as="h2" fontSize={{ base: '3xl', sm: '4xl' }} letterSpacing="tight">
             Areas we serve in {PRIMARY_CITY}
-          </h2>
-          <p className="mt-3 text-muted-foreground">
+          </Heading>
+          <Text mt={3} color="fg.muted">
             Local home and office moves across {PRIMARY_CITY}. Don&apos;t see your area? Just ask.
-          </p>
-        </div>
+          </Text>
+        </Box>
 
-        <ul className="mx-auto mt-10 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <SimpleGrid
+          as="ul"
+          mx="auto"
+          mt={10}
+          maxW="4xl"
+          columns={{ base: 2, sm: 3, lg: 4 }}
+          gap={3}
+          listStyleType="none"
+        >
           {SERVICE_AREAS.map((area) => (
-            <li
+            <HStack
+              as="li"
               key={area}
-              className="flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-sm font-medium shadow-sm"
+              gap={2}
+              rounded="xl"
+              borderWidth="1px"
+              bg="white"
+              px={4}
+              py={3}
+              fontSize="sm"
+              fontWeight="medium"
+              shadow="sm"
             >
-              <MapPin className="h-4 w-4 shrink-0 text-brand-600" />
+              <Box color="brand.600" flexShrink={0}>
+                <MapPin size={16} />
+              </Box>
               {area}
-            </li>
+            </HStack>
           ))}
-        </ul>
-      </div>
-    </section>
+        </SimpleGrid>
+      </Container>
+    </Box>
   );
 }
