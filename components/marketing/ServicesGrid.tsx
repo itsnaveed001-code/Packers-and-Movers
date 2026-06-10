@@ -23,6 +23,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { Service } from '@/types/database';
 import { isComingSoon, PRIMARY_CITY } from '@/lib/constants';
+import { glassCard } from '@/theme/glass';
 
 const ICONS: Record<string, LucideIcon> = {
   truck: Truck,
@@ -43,12 +44,10 @@ function ServiceCard({ service, soon }: { service: Service; soon: boolean }) {
     <Box
       h="full"
       rounded="2xl"
-      borderWidth="1px"
-      bg="white"
       p={6}
-      shadow="sm"
       opacity={soon ? 0.75 : 1}
       transition="box-shadow 0.2s, border-color 0.2s"
+      {...glassCard}
       _hover={soon ? undefined : { shadow: 'md', borderColor: 'brand.300' }}
     >
       <Flex mb={4} align="center" justify="space-between">

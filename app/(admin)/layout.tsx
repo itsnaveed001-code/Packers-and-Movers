@@ -1,3 +1,4 @@
+import '@/app/globals.css';
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/admin/Sidebar';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
@@ -21,7 +22,7 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen md:flex">
       <Sidebar />
-      <main className="flex-1 bg-secondary/30">{children}</main>
+      <main className="flex-1 bg-secondary/30 pb-24 md:pb-0">{children}</main>
     </div>
   );
 }
