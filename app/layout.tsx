@@ -20,20 +20,15 @@ export const metadata: Metadata = {
     'Professional packers and movers in Bengaluru offering home shifting, office relocation, and local moves. Insured, on-time, transparent pricing. Book online.',
   applicationName: BUSINESS.name,
   authors: [{ name: BUSINESS.name }],
-  keywords: [
-    'packers and movers Bengaluru',
-    'packers and movers Bangalore',
-    'home shifting Bengaluru',
-    'office shifting Bangalore',
-    'house shifting',
-    'local movers Bangalore',
-    'BHK shifting',
-    '2 BHK shifting Bangalore',
-  ],
+  // NOTE: no `keywords` — the meta keywords tag is deprecated and ignored by
+  // search engines. NOTE: no global `alternates.canonical` here on purpose —
+  // each page sets its own canonical via lib/seo.ts `pageMetadata`, so pages
+  // stop inheriting a single site-wide canonical. This block is only the
+  // fallback OG for routes that don't set their own (e.g. /admin, which is
+  // noindex anyway).
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    url: BUSINESS.siteUrl,
     siteName: BUSINESS.name,
     title: `${BUSINESS.name} — Trusted Packers and Movers`,
     description:
@@ -49,13 +44,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  alternates: {
-    canonical: BUSINESS.siteUrl,
-  },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#1e40af',
+  themeColor: '#0E1A3D',
   width: 'device-width',
   initialScale: 1,
 };

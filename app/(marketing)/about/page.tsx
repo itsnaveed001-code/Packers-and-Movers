@@ -1,11 +1,12 @@
-import type { Metadata } from 'next';
 import { BUSINESS, PRIMARY_CITY } from '@/lib/constants';
 import { Shield, Wallet, Clock, BadgeCheck } from 'lucide-react';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'About',
   description: `Learn about ${BUSINESS.name}, our mission, and the team behind your move in ${PRIMARY_CITY}.`,
-};
+  path: '/about',
+});
 
 const VALUES = [
   {

@@ -10,7 +10,7 @@ export const BUSINESS = {
   // TODO(owner): replace with real office address in Bengaluru
   address: 'Bengaluru, Karnataka, India',
   domain: 'easyshiftx.com',
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://packersandmovers-phi.vercel.app',
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://easyshiftx.vercel.app',
   tagline: 'Stress-free packing and moving in Bengaluru',
   // gst left blank until verified — do not display unverified info
   gst: '',

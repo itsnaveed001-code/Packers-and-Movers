@@ -1,13 +1,22 @@
-import { BUSINESS, CITIES } from '@/lib/constants';
+import { BUSINESS, CITIES, STATS } from '@/lib/constants';
 
 export function LocalBusinessJsonLd() {
+  // Only emit aggregateRating when we actually have a verifiable rating —
+  // fabricating one risks a structured-data penalty. Phase 2 wires this to the
+  // editable Google rating in site_settings.
+  const ratingValue = Number.parseFloat(String(STATS.rating));
+  const hasRating = Number.isFinite(ratingValue) && ratingValue > 0;
+
   const json = {
     '@context': 'https://schema.org',
     '@type': 'MovingCompany',
+    '@id': `${BUSINESS.siteUrl}/#movingcompany`,
     name: BUSINESS.name,
     url: BUSINESS.siteUrl,
+    image: `${BUSINESS.siteUrl}/LOGO01.svg`,
     telephone: BUSINESS.phone,
     email: BUSINESS.email,
+    priceRange: '₹₹',
     address: {
       '@type': 'PostalAddress',
       streetAddress: BUSINESS.address,
@@ -23,6 +32,9 @@ export function LocalBusinessJsonLd() {
       },
     ],
     sameAs: [`https://wa.me/${BUSINESS.whatsapp}`],
+    ...(hasRating
+      ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: String(ratingValue) } }
+      : {}),
   };
 
   return (

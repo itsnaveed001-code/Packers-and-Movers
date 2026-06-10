@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { getServiceBySlug } from '@/lib/queries';
 import { formatINR, whatsappUrl } from '@/lib/utils';
 import { isComingSoon, HOUSE_SHIFTING_TIERS, PRIMARY_CITY } from '@/lib/constants';
+import { pageMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,10 +26,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const service = await getServiceBySlug(slug);
   if (!service) return { title: 'Service not found' };
-  return {
+  return pageMetadata({
     title: service.name,
     description: service.short_description,
-  };
+    path: `/services/${slug}`,
+  });
 }
 
 const INCLUDED_BY_SLUG: Record<string, string[]> = {

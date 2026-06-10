@@ -41,3 +41,6 @@ next-env.d.ts
 # unrelated scripts / scratch files that occasionally land here
 *.py
 
+# local planning / prompt docs kept in the repo root but not part of the app
+*-claude-code-prompt.md
+
