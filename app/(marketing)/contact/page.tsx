@@ -1,13 +1,14 @@
-import type { Metadata } from 'next';
 import { Phone, Mail, MessageCircle, MapPin, Clock } from 'lucide-react';
 import { ContactForm } from '@/components/marketing/ContactForm';
 import { BUSINESS, HOURS } from '@/lib/constants';
 import { whatsappUrl } from '@/lib/utils';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Contact us',
   description: `Get in touch with ${BUSINESS.name}. Call, WhatsApp, or send us a message — we usually respond within a few hours.`,
-};
+  path: '/contact',
+});
 
 export default function ContactPage() {
   const mapsSrc = `https://www.google.com/maps?q=${encodeURIComponent(BUSINESS.address)}&output=embed`;

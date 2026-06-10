@@ -1,14 +1,15 @@
-import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { BookingFlow } from '@/components/booking/BookingFlow';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getActiveServices } from '@/lib/queries';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Book your move',
   description:
     'Book your packers and movers slot online. Choose your service, date, time, and we will call you within 2 hours to confirm.',
-};
+  path: '/book',
+});
 
 export const dynamic = 'force-dynamic';
 

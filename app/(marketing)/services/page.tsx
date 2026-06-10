@@ -1,12 +1,13 @@
-import type { Metadata } from 'next';
 import { ServicesGrid } from '@/components/marketing/ServicesGrid';
 import { getActiveServices } from '@/lib/queries';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
   title: 'Our services',
   description:
     'Full range of moving services — home shifting, office relocation, vehicle transport, intercity moves, and secure storage.',
-};
+  path: '/services',
+});
 
 export const dynamic = 'force-dynamic';
 
