@@ -1,9 +1,12 @@
 import { Box, Container, SimpleGrid, Heading, Text, Flex } from '@chakra-ui/react';
-import { Shield, Wallet, Clock, BadgeCheck } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { BadgeCheck } from 'lucide-react';
+import { getAboutValues, getSiteSettings, getContentBlocksForPage } from '@/lib/cms';
+import { getIcon } from '@/lib/icon-map';
 import { BUSINESS, PRIMARY_CITY } from '@/lib/constants';
 import { pageMetadata } from '@/lib/seo';
 import { glassCard } from '@/theme/glass';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = pageMetadata({
   title: 'About',
@@ -11,30 +14,26 @@ export const metadata = pageMetadata({
   path: '/about',
 });
 
-const VALUES: { icon: LucideIcon; title: string; body: string }[] = [
-  {
-    icon: BadgeCheck,
-    title: 'Careful handling',
-    body: 'Trained, background-checked crew who pack and move your things like their own.',
-  },
-  {
-    icon: Wallet,
-    title: 'Honest pricing',
-    body: 'A clear estimate up front. No hidden charges added on the day of the move.',
-  },
-  {
-    icon: Clock,
-    title: 'On time',
-    body: 'We show up in the slot you book — and keep you posted if anything changes.',
-  },
-  {
-    icon: Shield,
-    title: 'Insured moves',
-    body: 'Transit cover available on every booking, so your move is protected.',
-  },
-];
+export default async function AboutPage() {
+  const [values, settings, copy] = await Promise.all([
+    getAboutValues(),
+    getSiteSettings(),
+    getContentBlocksForPage('about'),
+  ]);
 
-export default function AboutPage() {
+  const companyName = settings?.company_name ?? BUSINESS.name;
+  const h1 = (copy.heading_h1 as string | undefined) ?? `About ${companyName}`;
+  const intro =
+    (copy.intro as string | undefined) ??
+    `${companyName} is a packers and movers service based in ${PRIMARY_CITY}, helping families and businesses relocate with less stress. We focus on careful handling, honest pricing, and showing up when we say we will.`;
+  const storyHeading = (copy.story_heading as string | undefined) ?? 'Our story';
+  const storyPara1 =
+    (copy.story_para_1 as string | undefined) ??
+    `We started ${companyName} with a simple belief: moving shouldn't be chaotic. We're building a moving service that ${PRIMARY_CITY} can rely on — one careful, on-time move at a time.`;
+  const storyPara2 =
+    (copy.story_para_2 as string | undefined) ??
+    'Every move is handled by a trained, background-checked crew and tracked from start to finish. No surprises, no hidden charges.';
+
   return (
     <Box bg="white">
       <Box
@@ -46,12 +45,10 @@ export default function AboutPage() {
       >
         <Container maxW="7xl" py={{ base: 14, sm: 16 }}>
           <Heading as="h1" fontSize={{ base: '3xl', sm: '4xl' }} letterSpacing="tight">
-            About {BUSINESS.name}
+            {h1}
           </Heading>
           <Text mt={4} maxW="2xl" color="fg.muted">
-            {BUSINESS.name} is a packers and movers service based in {PRIMARY_CITY},
-            helping families and businesses relocate with less stress. We focus on
-            careful handling, honest pricing, and showing up when we say we will.
+            {intro}
           </Text>
         </Container>
       </Box>
@@ -60,42 +57,44 @@ export default function AboutPage() {
         <SimpleGrid columns={{ base: 1, md: 2 }} gap={10}>
           <Box>
             <Heading as="h2" fontSize="2xl" fontWeight="semibold">
-              Our story
+              {storyHeading}
             </Heading>
             <Text mt={3} color="fg.muted">
-              We started {BUSINESS.name} with a simple belief: moving shouldn&apos;t be
-              chaotic. We&apos;re building a moving service that {PRIMARY_CITY} can rely
-              on — one careful, on-time move at a time.
+              {storyPara1}
             </Text>
             <Text mt={3} color="fg.muted">
-              Every move is handled by a trained, background-checked crew and tracked
-              from start to finish. No surprises, no hidden charges.
+              {storyPara2}
             </Text>
           </Box>
 
-          <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
-            {VALUES.map(({ icon: Icon, title, body }) => (
-              <Box key={title} rounded="2xl" p={6} {...glassCard}>
-                <Flex
-                  align="center"
-                  justify="center"
-                  h={11}
-                  w={11}
-                  rounded="xl"
-                  bg="brand.50"
-                  color="brand.600"
-                >
-                  <Icon size={20} />
-                </Flex>
-                <Heading as="h3" mt={4} fontSize="md" fontWeight="semibold">
-                  {title}
-                </Heading>
-                <Text mt={1} fontSize="sm" color="fg.muted">
-                  {body}
-                </Text>
-              </Box>
-            ))}
-          </SimpleGrid>
+          {values.length > 0 ? (
+            <SimpleGrid columns={{ base: 1, sm: 2 }} gap={4}>
+              {values.map((v) => {
+                const Icon = getIcon(v.icon) ?? BadgeCheck;
+                return (
+                  <Box key={v.id} rounded="2xl" p={6} {...glassCard}>
+                    <Flex
+                      align="center"
+                      justify="center"
+                      h={11}
+                      w={11}
+                      rounded="xl"
+                      bg="brand.50"
+                      color="brand.600"
+                    >
+                      <Icon size={20} />
+                    </Flex>
+                    <Heading as="h3" mt={4} fontSize="md" fontWeight="semibold">
+                      {v.title}
+                    </Heading>
+                    <Text mt={1} fontSize="sm" color="fg.muted">
+                      {v.body}
+                    </Text>
+                  </Box>
+                );
+              })}
+            </SimpleGrid>
+          ) : null}
         </SimpleGrid>
       </Container>
     </Box>

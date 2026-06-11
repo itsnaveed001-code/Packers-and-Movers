@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { createSupabaseAdminClient } from './supabase/admin';
 import type {
   SiteSettings,
@@ -20,7 +21,7 @@ import type {
 
 // ---- site_settings ---------------------------------------------------
 
-export async function getSiteSettings(): Promise<SiteSettings | null> {
+export const getSiteSettings = cache(async function getSiteSettings(): Promise<SiteSettings | null> {
   try {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
@@ -37,11 +38,11 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
     console.error('[cms] getSiteSettings threw:', err);
     return null;
   }
-}
+});
 
 // ---- service_areas ---------------------------------------------------
 
-export async function getServiceAreas(): Promise<ServiceArea[]> {
+export const getServiceAreas = cache(async function getServiceAreas(): Promise<ServiceArea[]> {
   try {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
@@ -58,11 +59,11 @@ export async function getServiceAreas(): Promise<ServiceArea[]> {
     console.error('[cms] getServiceAreas threw:', err);
     return [];
   }
-}
+});
 
 // ---- content_blocks --------------------------------------------------
 
-export async function getContentBlock(
+export const getContentBlock = cache(async function getContentBlock(
   page: string,
   key: string,
 ): Promise<ContentBlock | null> {
@@ -83,9 +84,9 @@ export async function getContentBlock(
     console.error('[cms] getContentBlock threw:', err);
     return null;
   }
-}
+});
 
-export async function getContentBlocksForPage(
+export const getContentBlocksForPage = cache(async function getContentBlocksForPage(
   page: string,
 ): Promise<Record<string, unknown>> {
   try {
@@ -107,11 +108,11 @@ export async function getContentBlocksForPage(
     console.error('[cms] getContentBlocksForPage threw:', err);
     return {};
   }
-}
+});
 
 // ---- home_features ---------------------------------------------------
 
-export async function getHomeFeatures(
+export const getHomeFeatures = cache(async function getHomeFeatures(
   section: HomeFeatureSection,
 ): Promise<HomeFeature[]> {
   try {
@@ -131,11 +132,11 @@ export async function getHomeFeatures(
     console.error('[cms] getHomeFeatures threw:', err);
     return [];
   }
-}
+});
 
 // ---- about_values ----------------------------------------------------
 
-export async function getAboutValues(): Promise<AboutValue[]> {
+export const getAboutValues = cache(async function getAboutValues(): Promise<AboutValue[]> {
   try {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
@@ -152,11 +153,11 @@ export async function getAboutValues(): Promise<AboutValue[]> {
     console.error('[cms] getAboutValues threw:', err);
     return [];
   }
-}
+});
 
 // ---- testimonials ---------------------------------------------------
 
-export async function getTestimonials(): Promise<Testimonial[]> {
+export const getTestimonials = cache(async function getTestimonials(): Promise<Testimonial[]> {
   try {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
@@ -173,11 +174,11 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     console.error('[cms] getTestimonials threw:', err);
     return [];
   }
-}
+});
 
 // ---- faqs (per service) ---------------------------------------------
 
-export async function getServiceFaqs(serviceId: string): Promise<Faq[]> {
+export const getServiceFaqs = cache(async function getServiceFaqs(serviceId: string): Promise<Faq[]> {
   try {
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
@@ -195,11 +196,11 @@ export async function getServiceFaqs(serviceId: string): Promise<Faq[]> {
     console.error('[cms] getServiceFaqs threw:', err);
     return [];
   }
-}
+});
 
 // ---- service_includes -----------------------------------------------
 
-export async function getServiceIncludes(
+export const getServiceIncludes = cache(async function getServiceIncludes(
   serviceId: string,
 ): Promise<ServiceInclude[]> {
   try {
@@ -218,11 +219,11 @@ export async function getServiceIncludes(
     console.error('[cms] getServiceIncludes threw:', err);
     return [];
   }
-}
+});
 
 // ---- pricing_tiers ---------------------------------------------------
 
-export async function getServicePricingTiers(
+export const getServicePricingTiers = cache(async function getServicePricingTiers(
   serviceId: string,
 ): Promise<PricingTier[]> {
   try {
@@ -241,7 +242,7 @@ export async function getServicePricingTiers(
     console.error('[cms] getServicePricingTiers threw:', err);
     return [];
   }
-}
+});
 
 /**
  * Single source of truth for the "from ₹X" headline on a service.
@@ -249,7 +250,7 @@ export async function getServicePricingTiers(
  * if the service has no tiers. Fixes the home-shifting pricing
  * contradiction (bug #2 in Six Phase Delivery Plan).
  */
-export async function getServiceFromPrice(
+export const getServiceFromPrice = cache(async function getServiceFromPrice(
   serviceId: string,
 ): Promise<number | null> {
   try {
@@ -270,4 +271,4 @@ export async function getServiceFromPrice(
     console.error('[cms] getServiceFromPrice threw:', err);
     return null;
   }
-}
+});
