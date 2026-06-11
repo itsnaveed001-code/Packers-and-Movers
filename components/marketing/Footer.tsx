@@ -11,7 +11,8 @@ import {
   Link as ChakraLink,
 } from '@chakra-ui/react';
 import { Truck, Phone, Mail, MapPin } from 'lucide-react';
-import { BUSINESS, PRIMARY_CITY, SERVICE_AREAS } from '@/lib/constants';
+import { getSiteSettings, getServiceAreas } from '@/lib/cms';
+import { BUSINESS, PRIMARY_CITY, SERVICE_AREAS as FALLBACK_AREAS } from '@/lib/constants';
 
 const SERVICE_LINKS = [
   { href: '/services/home-shifting', label: 'Home shifting' },
@@ -21,7 +22,23 @@ const SERVICE_LINKS = [
   { href: '/services/storage', label: 'Storage' },
 ];
 
-export function Footer() {
+export async function Footer() {
+  const [settings, areas] = await Promise.all([
+    getSiteSettings(),
+    getServiceAreas(),
+  ]);
+
+  const name = settings?.company_name ?? BUSINESS.name;
+  const phone = settings?.phone ?? BUSINESS.phone;
+  const email = settings?.email ?? BUSINESS.email;
+  const address = settings?.address ?? BUSINESS.address;
+  const tagline = settings?.tagline ?? BUSINESS.tagline;
+  const footerText = settings?.footer_text;
+
+  const areaNames =
+    areas.length > 0 ? areas.map((a) => a.name) : (FALLBACK_AREAS as readonly string[]);
+  const areaPreview = areaNames.slice(0, 6).join(', ');
+
   const year = new Date().getFullYear();
   return (
     <Box as="footer" bg="brand.900" color="brand.50" borderTopWidth="1px">
@@ -33,14 +50,19 @@ export function Footer() {
                 <HStack gap={2}>
                   <Truck size={22} />
                   <Text fontSize="lg" fontWeight="semibold">
-                    {BUSINESS.name}
+                    {name}
                   </Text>
                 </HStack>
               </NextLink>
             </ChakraLink>
             <Text fontSize="sm" color="brand.100" opacity={0.85}>
-              {BUSINESS.tagline}.
+              {tagline}.
             </Text>
+            {footerText ? (
+              <Text fontSize="xs" color="brand.100" opacity={0.7} mt={1}>
+                {footerText}
+              </Text>
+            ) : null}
           </Stack>
 
           <Box>
@@ -68,8 +90,7 @@ export function Footer() {
               Service Areas
             </Heading>
             <Text fontSize="sm" color="brand.100" opacity={0.85}>
-              Serving all of {PRIMARY_CITY} — including{' '}
-              {SERVICE_AREAS.slice(0, 6).join(', ')}, and more.
+              Serving all of {PRIMARY_CITY} — including {areaPreview}, and more.
             </Text>
           </Box>
 
@@ -83,11 +104,11 @@ export function Footer() {
                   <Phone size={16} />
                 </Box>
                 <ChakraLink
-                  href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`}
+                  href={`tel:${phone.replace(/\s/g, '')}`}
                   color="brand.100"
                   _hover={{ color: 'white' }}
                 >
-                  {BUSINESS.phone}
+                  {phone}
                 </ChakraLink>
               </HStack>
               <HStack align="start" gap={2}>
@@ -95,18 +116,18 @@ export function Footer() {
                   <Mail size={16} />
                 </Box>
                 <ChakraLink
-                  href={`mailto:${BUSINESS.email}`}
+                  href={`mailto:${email}`}
                   color="brand.100"
                   _hover={{ color: 'white' }}
                 >
-                  {BUSINESS.email}
+                  {email}
                 </ChakraLink>
               </HStack>
               <HStack align="start" gap={2}>
                 <Box pt="2px">
                   <MapPin size={16} />
                 </Box>
-                <Text>{BUSINESS.address}</Text>
+                <Text>{address}</Text>
               </HStack>
             </Stack>
           </Box>
@@ -125,7 +146,7 @@ export function Footer() {
           color="brand.100"
         >
           <Text opacity={0.7}>
-            © {year} {BUSINESS.name}. All rights reserved.
+            © {year} {name}. All rights reserved.
           </Text>
           <HStack gap={4} opacity={0.85}>
             <ChakraLink asChild _hover={{ color: 'white' }}>

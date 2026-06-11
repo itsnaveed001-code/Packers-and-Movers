@@ -14,16 +14,27 @@ import {
   Flex,
 } from '@chakra-ui/react';
 import { ArrowRight, MessageCircle, Shield } from 'lucide-react';
+import { getSiteSettings, getHomeFeatures, getContentBlocksForPage } from '@/lib/cms';
 import { BUSINESS, PRIMARY_CITY } from '@/lib/constants';
 import { whatsappUrl } from '@/lib/utils';
 
-const SAMPLE_BOOKINGS = [
-  { name: 'Home Shifting', area: 'Koramangala → Whitefield', time: '10:00 AM' },
-  { name: 'Office Shifting', area: 'Indiranagar → HSR Layout', time: '12:00 PM' },
-  { name: '2 BHK Shifting', area: 'Jayanagar → Marathahalli', time: '3:00 PM' },
-];
+export async function Hero() {
+  const [settings, exampleCards, copy] = await Promise.all([
+    getSiteSettings(),
+    getHomeFeatures('example_card'),
+    getContentBlocksForPage('home'),
+  ]);
 
-export function Hero() {
+  const tagline = settings?.tagline ?? BUSINESS.tagline;
+  const pill =
+    (copy.hero_pill as string | undefined) ?? `Now serving all of ${PRIMARY_CITY}`;
+  const heading =
+    (copy.hero_heading as string | undefined) ??
+    `Trusted Packers and Movers in ${PRIMARY_CITY}`;
+  const subheading =
+    (copy.hero_subheading as string | undefined) ??
+    `${tagline}. Insured, on-time relocations with transparent pricing — book your slot online in under a minute.`;
+
   return (
     <Box
       as="section"
@@ -52,7 +63,7 @@ export function Hero() {
               <Box color="brand.600">
                 <Shield size={14} />
               </Box>
-              Now serving all of {PRIMARY_CITY}
+              {pill}
             </HStack>
 
             <Heading
@@ -63,12 +74,11 @@ export function Hero() {
               letterSpacing="tight"
               lineHeight="1.1"
             >
-              Trusted Packers and Movers in {PRIMARY_CITY}
+              {heading}
             </Heading>
 
             <Text mt={4} maxW="xl" fontSize={{ base: 'md', sm: 'lg' }} color="fg.muted">
-              {BUSINESS.tagline}. Insured, on-time relocations with transparent pricing —
-              book your slot online in under a minute.
+              {subheading}
             </Text>
 
             <Stack mt={7} direction={{ base: 'column', sm: 'row' }} gap={3}>
@@ -143,27 +153,38 @@ export function Hero() {
                     Live
                   </Text>
                 </Flex>
-                {SAMPLE_BOOKINGS.map((row) => (
-                  <Flex key={row.name} align="center" justify="space-between" fontSize="sm">
-                    <Box>
-                      <Text fontWeight="medium">{row.name}</Text>
-                      <Text fontSize="xs" color="fg.muted">
-                        {row.area}
-                      </Text>
-                    </Box>
-                    <Text
-                      rounded="md"
-                      bg="brand.50"
-                      px={2}
-                      py={1}
-                      fontSize="xs"
-                      fontWeight="medium"
-                      color="brand.700"
-                    >
-                      {row.time}
-                    </Text>
-                  </Flex>
-                ))}
+                {exampleCards.length > 0
+                  ? exampleCards.map((row) => {
+                      // body = "Area → Area · Time" — split to show secondary line + chip.
+                      const [areaPart, timePart] = (row.body ?? '').split(/\s+·\s+/);
+                      return (
+                        <Flex
+                          key={row.id}
+                          align="center"
+                          justify="space-between"
+                          fontSize="sm"
+                        >
+                          <Box>
+                            <Text fontWeight="medium">{row.title}</Text>
+                            <Text fontSize="xs" color="fg.muted">
+                              {areaPart}
+                            </Text>
+                          </Box>
+                          <Text
+                            rounded="md"
+                            bg="brand.50"
+                            px={2}
+                            py={1}
+                            fontSize="xs"
+                            fontWeight="medium"
+                            color="brand.700"
+                          >
+                            {timePart ?? ''}
+                          </Text>
+                        </Flex>
+                      );
+                    })
+                  : null}
               </Stack>
             </Box>
           </Box>

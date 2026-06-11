@@ -10,9 +10,12 @@ import {
 } from '@chakra-ui/react';
 import { Phone, Mail, MessageCircle, MapPin, Clock } from 'lucide-react';
 import { ContactForm } from '@/components/marketing/ContactForm';
+import { getSiteSettings, getContentBlock } from '@/lib/cms';
 import { BUSINESS, HOURS } from '@/lib/constants';
 import { whatsappUrl } from '@/lib/utils';
 import { pageMetadata } from '@/lib/seo';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = pageMetadata({
   title: 'Contact us',
@@ -20,8 +23,26 @@ export const metadata = pageMetadata({
   path: '/contact',
 });
 
-export default function ContactPage() {
-  const mapsSrc = `https://www.google.com/maps?q=${encodeURIComponent(BUSINESS.address)}&output=embed`;
+export default async function ContactPage() {
+  const [settings, intro] = await Promise.all([
+    getSiteSettings(),
+    getContentBlock('contact', 'intro'),
+  ]);
+
+  const phone = settings?.phone ?? BUSINESS.phone;
+  const email = settings?.email ?? BUSINESS.email;
+  const address = settings?.address ?? BUSINESS.address;
+  const hours = settings?.business_hours ?? HOURS;
+  const weekdayHours = (hours as Record<string, string>).weekday ?? HOURS.weekday;
+  const sundayHours = (hours as Record<string, string>).sunday ?? HOURS.sunday;
+
+  const mapMode = settings?.map_mode ?? 'embed';
+  const mapQuery = settings?.map_query ?? address;
+  const mapsSrc = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed`;
+
+  const introCopy =
+    (intro?.value as string | undefined) ??
+    "We're here to help with any question — large move or small. The fastest way is WhatsApp.";
 
   return (
     <>
@@ -37,7 +58,7 @@ export default function ContactPage() {
             Contact us
           </Heading>
           <Text mt={3} maxW="2xl" color="fg.muted">
-            We&apos;re here to help with any question — large move or small. The fastest way is WhatsApp.
+            {introCopy}
           </Text>
         </Container>
       </Box>
@@ -51,9 +72,7 @@ export default function ContactPage() {
               </Heading>
               <Stack mt={4} gap={4} fontSize="sm">
                 <ContactRow icon={Phone} label="Phone">
-                  <ContactLink href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`}>
-                    {BUSINESS.phone}
-                  </ContactLink>
+                  <ContactLink href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</ContactLink>
                 </ContactRow>
                 <ContactRow icon={MessageCircle} label="WhatsApp" iconColor="green.600">
                   <ContactLink href={whatsappUrl()} external color="green.700">
@@ -61,30 +80,30 @@ export default function ContactPage() {
                   </ContactLink>
                 </ContactRow>
                 <ContactRow icon={Mail} label="Email">
-                  <ContactLink href={`mailto:${BUSINESS.email}`}>
-                    {BUSINESS.email}
-                  </ContactLink>
+                  <ContactLink href={`mailto:${email}`}>{email}</ContactLink>
                 </ContactRow>
                 <ContactRow icon={MapPin} label="Office">
-                  <Text color="fg.muted">{BUSINESS.address}</Text>
+                  <Text color="fg.muted">{address}</Text>
                 </ContactRow>
                 <ContactRow icon={Clock} label="Hours">
-                  <Text color="fg.muted">Mon–Sat: {HOURS.weekday}</Text>
-                  <Text color="fg.muted">Sun: {HOURS.sunday}</Text>
+                  <Text color="fg.muted">Mon–Sat: {weekdayHours}</Text>
+                  <Text color="fg.muted">Sun: {sundayHours}</Text>
                 </ContactRow>
               </Stack>
 
-              <Box mt={8} overflow="hidden" rounded="2xl" borderWidth="1px">
-                <iframe
-                  title="Office location"
-                  src={mapsSrc}
-                  width="100%"
-                  height="280"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  style={{ border: 0, display: 'block' }}
-                />
-              </Box>
+              {mapMode === 'embed' ? (
+                <Box mt={8} overflow="hidden" rounded="2xl" borderWidth="1px">
+                  <iframe
+                    title="Office location"
+                    src={mapsSrc}
+                    width="100%"
+                    height="280"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    style={{ border: 0, display: 'block' }}
+                  />
+                </Box>
+              ) : null}
             </Box>
 
             <Box rounded="2xl" borderWidth="1px" bg="white" p={6} shadow="sm">

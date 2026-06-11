@@ -17,7 +17,6 @@ import {
   Link as ChakraLink,
 } from '@chakra-ui/react';
 import { Menu } from 'lucide-react';
-import { BUSINESS } from '@/lib/constants';
 
 const NAV = [
   { href: '/', label: 'Home' },
@@ -34,7 +33,7 @@ const glass = {
   css: { WebkitBackdropFilter: 'blur(16px) saturate(180%)' },
 };
 
-export function Header() {
+export function Header({ companyName }: { companyName: string }) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -58,11 +57,11 @@ export function Header() {
           boxShadow="0 8px 32px rgba(15, 23, 42, 0.12)"
           {...glass}
         >
-          <ChakraLink asChild aria-label={BUSINESS.name} _hover={{ textDecoration: 'none' }}>
+          <ChakraLink asChild aria-label={companyName} _hover={{ textDecoration: 'none' }}>
             <NextLink href="/">
               <Image
                 src="/LOGO01.svg"
-                alt={BUSINESS.name}
+                alt={companyName}
                 width={200}
                 height={80}
                 priority
@@ -109,7 +108,7 @@ export function Header() {
                     bg="rgba(255, 255, 255, 0.72)"
                   >
                     <Drawer.Header>
-                      <Drawer.Title>{BUSINESS.name}</Drawer.Title>
+                      <Drawer.Title>{companyName}</Drawer.Title>
                     </Drawer.Header>
                     <Drawer.Body>
                       <Stack gap={1}>

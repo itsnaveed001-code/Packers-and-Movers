@@ -1,8 +1,12 @@
 import { Box, Container, SimpleGrid, Heading, Text, HStack } from '@chakra-ui/react';
 import { MapPin } from 'lucide-react';
-import { SERVICE_AREAS, PRIMARY_CITY } from '@/lib/constants';
+import { getServiceAreas } from '@/lib/cms';
+import { PRIMARY_CITY } from '@/lib/constants';
 
-export function ServiceAreas() {
+export async function ServiceAreas() {
+  const areas = await getServiceAreas();
+  if (areas.length === 0) return null;
+
   return (
     <Box as="section" py={{ base: 16, sm: 20 }}>
       <Container maxW="7xl">
@@ -24,10 +28,10 @@ export function ServiceAreas() {
           gap={3}
           listStyleType="none"
         >
-          {SERVICE_AREAS.map((area) => (
+          {areas.map((area) => (
             <HStack
               as="li"
-              key={area}
+              key={area.id}
               gap={2}
               rounded="xl"
               borderWidth="1px"
@@ -41,7 +45,7 @@ export function ServiceAreas() {
               <Box color="brand.600" flexShrink={0}>
                 <MapPin size={16} />
               </Box>
-              {area}
+              {area.name}
             </HStack>
           ))}
         </SimpleGrid>
