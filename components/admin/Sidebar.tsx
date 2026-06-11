@@ -11,6 +11,10 @@ import {
   Truck,
   Settings,
   BarChart3,
+  Users,
+  Inbox,
+  BadgeIndianRupee,
+  Building2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,10 +25,14 @@ import { BUSINESS } from '@/lib/constants';
 const ITEMS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { href: '/admin', label: 'Bookings', icon: LayoutDashboard, exact: true },
   { href: '/admin/schedule', label: 'Schedule', icon: CalendarDays },
+  { href: '/admin/customers', label: 'Customers', icon: Users },
+  { href: '/admin/inbox', label: 'Inbox', icon: Inbox },
   { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/admin/availability', label: 'Availability', icon: CalendarOff },
+  { href: '/admin/pricing', label: 'Pricing', icon: BadgeIndianRupee },
   { href: '/admin/services', label: 'Services', icon: Boxes },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/admin/availability', label: 'Availability', icon: CalendarOff },
+  { href: '/admin/business', label: 'Business', icon: Building2 },
+  { href: '/admin/settings', label: 'Hours', icon: Settings },
 ];
 
 export function Sidebar() {

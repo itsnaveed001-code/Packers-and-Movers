@@ -102,3 +102,71 @@ export const slotsQuerySchema = z.object({
 export const referenceCodeSchema = z
   .string()
   .regex(/^(ESX|PGM)-[A-Z2-9]{5}$/, 'Invalid reference code');
+
+// ---- Phase 3 admin editors ------------------------------------------
+
+export const siteSettingsUpdateSchema = z.object({
+  company_name: z.string().trim().min(2).max(80),
+  tagline: z.string().trim().min(2).max(160),
+  phone: z.string().trim().min(7).max(40),
+  whatsapp: z.string().trim().regex(/^\d{10,15}$/, 'Digits only, with country code'),
+  email: z.string().trim().email().max(120),
+  address: z.string().trim().min(5).max(300),
+  footer_text: z.string().trim().max(500).nullable().optional().or(z.literal('')),
+  business_hours: z.object({
+    weekday: z.string().trim().min(2).max(60),
+    sunday: z.string().trim().min(2).max(60),
+  }),
+  social_links: z
+    .record(z.string().trim().url().or(z.literal('')))
+    .default({}),
+  map_mode: z.enum(['embed', 'arealist']),
+  map_query: z.string().trim().max(300).nullable().optional().or(z.literal('')),
+  map_lat: z.number().min(-90).max(90).nullable().optional(),
+  map_lng: z.number().min(-180).max(180).nullable().optional(),
+  google_rating: z.number().min(0).max(5).nullable().optional(),
+  google_reviews_url: z
+    .string()
+    .trim()
+    .url()
+    .max(300)
+    .nullable()
+    .optional()
+    .or(z.literal('')),
+  insurance_badge_url: z
+    .string()
+    .trim()
+    .url()
+    .max(300)
+    .nullable()
+    .optional()
+    .or(z.literal('')),
+  stat_moves_completed: z.string().trim().max(40).nullable().optional().or(z.literal('')),
+  stat_years_service: z.string().trim().max(40).nullable().optional().or(z.literal('')),
+});
+
+export type SiteSettingsUpdateInput = z.infer<typeof siteSettingsUpdateSchema>;
+
+// PUT /api/admin/services/[id]/pricing — replaces the whole tier list
+// for a service. Empty list = delete all tiers.
+export const pricingTiersUpdateSchema = z.object({
+  tiers: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1).max(60),
+        sublabel: z.string().trim().max(120).nullable().optional().or(z.literal('')),
+        // Price in paise. Same cap as bookings.final_price (₹50L).
+        price: z.number().int().nonnegative().max(500_000_000),
+        display_order: z.number().int().nonnegative().default(0),
+      }),
+    )
+    .max(20),
+});
+
+export type PricingTiersUpdateInput = z.infer<typeof pricingTiersUpdateSchema>;
+
+export const inboxUpdateSchema = z.object({
+  is_read: z.boolean(),
+});
+
+export type InboxUpdateInput = z.infer<typeof inboxUpdateSchema>;
