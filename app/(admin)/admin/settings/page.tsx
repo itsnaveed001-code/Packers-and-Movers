@@ -4,7 +4,7 @@ import type { AvailabilitySettings } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
 
-const DEFAULTS: Omit<AvailabilitySettings, 'id'> = {
+const DEFAULTS: Omit<AvailabilitySettings, 'id' | 'updated_at'> = {
   working_days: [1, 2, 3, 4, 5, 6],
   working_hours_start: '09:00',
   working_hours_end: '19:00',
@@ -21,7 +21,8 @@ export default async function AdminSettingsPage() {
     .select('*')
     .maybeSingle();
 
-  const initial = data ?? { id: '', ...DEFAULTS };
+  const initial: AvailabilitySettings =
+    data ?? { id: '', updated_at: new Date().toISOString(), ...DEFAULTS };
 
   return (
     <div className="container max-w-3xl py-6 sm:py-8">
