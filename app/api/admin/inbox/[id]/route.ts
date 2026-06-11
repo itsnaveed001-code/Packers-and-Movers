@@ -1,10 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { z } from 'zod';
-import type { Database } from '@/types/database';
-
-type ServiceUpdate = Database['public']['Tables']['services']['Update'];
+import { inboxUpdateSchema } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,27 +16,6 @@ async function requireAdmin() {
   } = await auth.auth.getUser();
   return user;
 }
-
-const patchSchema = z
-  .object({
-    name: z.string().trim().min(2).max(80).optional(),
-    slug: z
-      .string()
-      .trim()
-      .min(2)
-      .max(60)
-      .regex(/^[a-z0-9-]+$/)
-      .optional(),
-    description: z.string().trim().min(10).max(2000).optional(),
-    short_description: z.string().trim().min(10).max(200).optional(),
-    base_price: z.number().int().nonnegative().nullable().optional(),
-    duration_hours: z.number().int().positive().max(72).optional(),
-    icon_name: z.string().trim().min(1).max(40).optional(),
-    display_order: z.number().int().nonnegative().optional(),
-    is_active: z.boolean().optional(),
-    coming_soon: z.boolean().optional(),
-  })
-  .refine((v) => Object.keys(v).length > 0, { message: 'nothing_to_update' });
 
 export async function PATCH(
   req: NextRequest,
@@ -59,7 +35,8 @@ export async function PATCH(
   } catch {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
   }
-  const parsed = patchSchema.safeParse(body);
+
+  const parsed = inboxUpdateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'validation_failed', issues: parsed.error.flatten() },
@@ -67,16 +44,36 @@ export async function PATCH(
     );
   }
 
-  const payload = parsed.data as ServiceUpdate;
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
-    .from('services')
-    .update(payload)
+    .from('contact_submissions')
+    .update({ is_read: parsed.data.is_read })
     .eq('id', id)
     .select('*')
     .single();
+
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'update_failed' }, { status: 500 });
   }
-  return NextResponse.json({ service: data });
+  return NextResponse.json({ submission: data });
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  if (!uuidRegex.test(id)) {
+    return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+  }
+  if (!(await requireAdmin())) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from('contact_submissions').delete().eq('id', id);
+  if (error) {
+    return NextResponse.json({ error: 'delete_failed' }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true });
 }
