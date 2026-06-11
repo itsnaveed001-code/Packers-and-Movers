@@ -62,7 +62,8 @@ export const updateBookingSchema = z.object({
   booking_date: z.string().regex(dateRegex, 'Invalid date').optional(),
   booking_time: z.string().regex(timeRegex, 'Invalid time').optional(),
   // Paise. Owner records the actual price after the job — used for revenue reports.
-  final_price: z.number().int().nonnegative().max(10_000_000).nullable().optional(),
+  // Cap = ₹50,00,000 (50 lakh) in paise — covers premium villa/interstate jobs with headroom.
+  final_price: z.number().int().nonnegative().max(500_000_000).nullable().optional(),
   payment_received: z.boolean().optional(),
   payment_method: z
     .string()
