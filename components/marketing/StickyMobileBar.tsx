@@ -1,9 +1,14 @@
 import NextLink from 'next/link';
 import { Box, Link as ChakraLink, HStack } from '@chakra-ui/react';
 import { Phone, MessageCircle, Calendar } from 'lucide-react';
+import { getSiteSettings } from '@/lib/cms';
 import { BUSINESS } from '@/lib/constants';
 
-export function StickyMobileBar() {
+export async function StickyMobileBar() {
+  const settings = await getSiteSettings();
+  const phone = settings?.phone ?? BUSINESS.phone;
+  const whatsapp = settings?.whatsapp ?? BUSINESS.whatsapp;
+
   return (
     <Box
       display={{ base: 'grid', md: 'none' }}
@@ -15,7 +20,7 @@ export function StickyMobileBar() {
       bg="white"
     >
       <ChakraLink
-        href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`}
+        href={`tel:${phone.replace(/\s/g, '')}`}
         justifyContent="center"
         borderRightWidth="1px"
         py={3}
@@ -30,7 +35,7 @@ export function StickyMobileBar() {
         </HStack>
       </ChakraLink>
       <ChakraLink
-        href={`https://wa.me/${BUSINESS.whatsapp}`}
+        href={`https://wa.me/${whatsapp}`}
         target="_blank"
         rel="noopener noreferrer"
         justifyContent="center"

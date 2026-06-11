@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Service } from '@/types/database';
-import { isComingSoon, PRIMARY_CITY } from '@/lib/constants';
+import { PRIMARY_CITY } from '@/lib/constants';
 import { glassCard } from '@/theme/glass';
 
 const ICONS: Record<string, LucideIcon> = {
@@ -102,7 +102,7 @@ export function ServicesGrid({ services }: { services: Service[] }) {
 
         <SimpleGrid mt={12} columns={{ base: 1, sm: 2, lg: 3 }} gap={5}>
           {services.map((service) => {
-            const soon = isComingSoon(service.slug);
+            const soon = service.coming_soon;
             if (soon) {
               return (
                 <Box key={service.id} aria-disabled="true" cursor="not-allowed">

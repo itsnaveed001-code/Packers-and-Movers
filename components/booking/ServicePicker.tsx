@@ -5,7 +5,6 @@ import { Truck, Home, Car, Package, Route, Building2, Lock } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react';
 import type { Service } from '@/types/database';
 import { formatINR } from '@/lib/utils';
-import { isComingSoon } from '@/lib/constants';
 
 const ICONS: Record<string, LucideIcon> = {
   truck: Truck,
@@ -30,7 +29,7 @@ export function ServicePicker({
       {services.map((service) => {
         const Icon = ICONS[service.icon_name] || Truck;
         const selected = service.id === selectedId;
-        const soon = isComingSoon(service.slug);
+        const soon = service.coming_soon;
         return (
           <chakra.button
             key={service.id}

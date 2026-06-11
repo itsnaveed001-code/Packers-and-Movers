@@ -21,6 +21,7 @@ import { SlotPicker } from './SlotPicker';
 import { CustomerForm, type CustomerFormValues } from './CustomerForm';
 import type { Service } from '@/types/database';
 import { formatTimeLabel } from '@/lib/utils';
+import { recordFunnelEvent } from '@/lib/analytics';
 
 const STEPS: Step[] = [
   { id: 1, label: 'Service' },
@@ -69,8 +70,28 @@ export function BookingFlow({
   const selectedService = services.find((s) => s.id === serviceId) ?? null;
   const isoSelectedDate = date ? isoDate(date) : null;
 
+  // Fire booking_started once when the wizard mounts.
+  React.useEffect(() => {
+    recordFunnelEvent({
+      event_type: 'booking_started',
+      service_slug: selectedService?.slug ?? null,
+    });
+    // intentionally empty deps — once per mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function next() {
-    setStep((s) => Math.min(s + 1, 5));
+    setStep((s) => {
+      const nextStep = Math.min(s + 1, 5);
+      if (nextStep !== s) {
+        recordFunnelEvent({
+          event_type: 'booking_step_completed',
+          service_slug: selectedService?.slug ?? null,
+          step: s, // the step we just finished
+        });
+      }
+      return nextStep;
+    });
   }
   function back() {
     setStep((s) => Math.max(s - 1, 1));
@@ -114,6 +135,11 @@ export function BookingFlow({
 
       if (res.status === 201) {
         const body = (await res.json()) as { reference_code: string };
+        recordFunnelEvent({
+          event_type: 'booking_submitted',
+          service_slug: selectedService?.slug ?? null,
+          payload: { reference_code: body.reference_code },
+        });
         router.push(`/booking-confirmed?ref=${encodeURIComponent(body.reference_code)}`);
         return;
       }

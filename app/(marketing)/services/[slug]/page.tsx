@@ -15,8 +15,14 @@ import {
 } from '@chakra-ui/react';
 import { ArrowRight, CheckCircle2, Lock, MessageCircle } from 'lucide-react';
 import { getServiceBySlug } from '@/lib/queries';
+import {
+  getServiceIncludes,
+  getServiceFaqs,
+  getServicePricingTiers,
+  getServiceFromPrice,
+} from '@/lib/cms';
 import { formatINR, whatsappUrl } from '@/lib/utils';
-import { isComingSoon, HOUSE_SHIFTING_TIERS, PRIMARY_CITY } from '@/lib/constants';
+import { PRIMARY_CITY } from '@/lib/constants';
 import { pageMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -38,139 +44,6 @@ export async function generateMetadata({
   });
 }
 
-const INCLUDED_BY_SLUG: Record<string, string[]> = {
-  'home-shifting': [
-    'Careful packing of every room with quality materials',
-    'Dismantling and reassembly of furniture',
-    'Loading, transit and unloading',
-    'Unpacking and setup at destination',
-    'Transit insurance available',
-  ],
-  'office-shifting': [
-    'Site survey and move plan in advance',
-    'IT equipment handling',
-    'Weekend or after-hours slots',
-    'Structured unpacking at destination',
-    'Workstation reassembly',
-  ],
-  'vehicle-transport': [
-    'Bike or car pickup from your address',
-    'Enclosed or open carrier options',
-    'GPS tracking through transit',
-    'Insured against transit damage',
-    'Door-to-door delivery',
-  ],
-  'local-moves': [
-    'Same-day slots available',
-    'Right-sized vehicles (tempo or mini-truck)',
-    'Packing materials included',
-    'Helpers for loading/unloading',
-  ],
-  'intercity-moves': [
-    'Dedicated truck — no co-loading',
-    'Scheduled delivery window',
-    'Full transit insurance',
-    'Real-time updates en route',
-  ],
-  storage: [
-    'Clean, climate-stable facility',
-    'CCTV monitored, 24/7 security',
-    'Short and long-term options',
-    'Easy pickup and drop scheduling',
-  ],
-};
-
-const FAQS_BY_SLUG: Record<string, { q: string; a: string }[]> = {
-  'home-shifting': [
-    {
-      q: 'How long does a home move take?',
-      a: 'A typical 2BHK takes 6–8 hours end-to-end for a local move. Larger homes and intercity moves take longer; we share a detailed estimate after a quick chat.',
-    },
-    {
-      q: 'Do you provide packing materials?',
-      a: 'Yes — boxes, bubble wrap, stretch film, and tape are included in every home move.',
-    },
-    {
-      q: 'What about my fragile items?',
-      a: "We use double-walled boxes, custom crating for art and glass, and dedicated padding. We'll walk you through it before move day.",
-    },
-    {
-      q: 'Is insurance included?',
-      a: 'Optional transit insurance is available on every move and we strongly recommend it for high-value contents.',
-    },
-  ],
-  'office-shifting': [
-    {
-      q: 'Can you move us over the weekend?',
-      a: 'Yes — weekend and after-hours slots are designed exactly for this. Most offices choose Friday evening to Sunday.',
-    },
-    {
-      q: 'Do you handle IT equipment?',
-      a: 'Yes. We disconnect, label, transport, and reconnect workstations and routers. Server racks require a quick survey first.',
-    },
-    {
-      q: 'How do you minimise downtime?',
-      a: 'We plan the move in zones so critical teams are operational first thing Monday.',
-    },
-  ],
-  'vehicle-transport': [
-    {
-      q: 'Will my vehicle pick up additional kilometres?',
-      a: 'No. Vehicles are loaded onto the carrier — the odometer does not move during transit.',
-    },
-    {
-      q: 'How long does intercity transport take?',
-      a: 'Bengaluru to a nearby city is typically 1–2 days. Longer routes vary — we share a delivery window before booking.',
-    },
-    {
-      q: 'Is the vehicle insured during transit?',
-      a: 'Yes — transit insurance is included by default for vehicle transport.',
-    },
-  ],
-  'local-moves': [
-    {
-      q: 'Do you offer same-day moves?',
-      a: 'Subject to availability — book by 11 AM and we can usually arrange a same-day slot for small moves.',
-    },
-    {
-      q: 'What size vehicle do I need?',
-      a: "We'll recommend the right size after a quick call. Small (tempo), medium (407), or large (mini-truck).",
-    },
-    {
-      q: 'Can I help with loading?',
-      a: 'Absolutely. But our crew is included — no extra cost.',
-    },
-  ],
-  'intercity-moves': [
-    {
-      q: 'Do you co-load with other customers?',
-      a: 'No — every intercity move is on a dedicated vehicle. Your goods are not mixed with anyone else’s.',
-    },
-    {
-      q: 'What are the delivery windows?',
-      a: 'Typical metro-to-metro moves take 1–3 days. We commit to a window before you book.',
-    },
-    {
-      q: 'How is pricing calculated?',
-      a: 'Pricing depends on volume, distance, and floor access. We share a fixed quote — no per-kilometre surprises.',
-    },
-  ],
-  storage: [
-    {
-      q: 'How is the storage facility secured?',
-      a: '24/7 CCTV, security guards, and access control. Climate is stable year-round.',
-    },
-    {
-      q: 'How is storage priced?',
-      a: 'By volume per month. We share a fixed monthly rate after the inventory is confirmed.',
-    },
-    {
-      q: 'Can you pick items up and drop them off?',
-      a: 'Yes — scheduled pickup and delivery on request, added to your monthly bill.',
-    },
-  ],
-};
-
 export default async function ServiceDetailPage({
   params,
 }: {
@@ -180,10 +53,19 @@ export default async function ServiceDetailPage({
   const service = await getServiceBySlug(slug);
   if (!service) notFound();
 
-  const includes = INCLUDED_BY_SLUG[service.slug] ?? [];
-  const faqs = FAQS_BY_SLUG[service.slug] ?? [];
-  const soon = isComingSoon(service.slug);
-  const tiers = service.slug === 'home-shifting' ? HOUSE_SHIFTING_TIERS : [];
+  const [includes, faqs, tiers, fromPrice] = await Promise.all([
+    getServiceIncludes(service.id),
+    getServiceFaqs(service.id),
+    getServicePricingTiers(service.id),
+    getServiceFromPrice(service.id),
+  ]);
+
+  const soon = service.coming_soon;
+
+  // Bug #2 fix: "Starting from" should derive from the lowest pricing tier
+  // when tiers exist (so the headline can't contradict the table). Falls
+  // back to services.base_price when there are no tiers.
+  const startingFromPaise = fromPrice ?? service.base_price;
 
   return (
     <>
@@ -238,11 +120,11 @@ export default async function ServiceDetailPage({
                     Book this service <ArrowRight size={16} />
                   </NextLink>
                 </Button>
-                {service.base_price != null && (
+                {startingFromPaise != null && (
                   <Text fontSize="sm" color="fg.muted">
                     Starting from{' '}
                     <Text as="span" fontWeight="semibold" color="fg">
-                      {formatINR(service.base_price)}
+                      {formatINR(startingFromPaise)}
                     </Text>
                   </Text>
                 )}
@@ -272,15 +154,17 @@ export default async function ServiceDetailPage({
                 </Table.Header>
                 <Table.Body>
                   {tiers.map((t) => (
-                    <Table.Row key={t.label}>
+                    <Table.Row key={t.id}>
                       <Table.Cell>
                         <Text fontWeight="medium">{t.label}</Text>
-                        <Text fontSize="xs" color="fg.muted">
-                          {t.note}
-                        </Text>
+                        {t.sublabel ? (
+                          <Text fontSize="xs" color="fg.muted">
+                            {t.sublabel}
+                          </Text>
+                        ) : null}
                       </Table.Cell>
                       <Table.Cell fontWeight="semibold" color="brand.700">
-                        ₹{t.priceFrom.toLocaleString('en-IN')}
+                        ₹{Math.round(t.price / 100).toLocaleString('en-IN')}
                       </Table.Cell>
                     </Table.Row>
                   ))}
@@ -302,11 +186,11 @@ export default async function ServiceDetailPage({
             </Heading>
             <SimpleGrid mt={5} columns={{ base: 1, sm: 2 }} gap={3}>
               {includes.map((item) => (
-                <HStack key={item} align="start" gap={2} fontSize="sm">
+                <HStack key={item.id} align="start" gap={2} fontSize="sm">
                   <Box color="green.600" flexShrink={0} pt="2px">
                     <CheckCircle2 size={20} />
                   </Box>
-                  <Text>{item}</Text>
+                  <Text>{item.item}</Text>
                 </HStack>
               ))}
             </SimpleGrid>
@@ -323,16 +207,16 @@ export default async function ServiceDetailPage({
             <Box mt={5} rounded="2xl" borderWidth="1px" bg="white" px={6}>
               <Accordion.Root collapsible defaultValue={['item-0']}>
                 {faqs.map((f, i) => (
-                  <Accordion.Item key={i} value={`item-${i}`}>
+                  <Accordion.Item key={f.id} value={`item-${i}`}>
                     <Accordion.ItemTrigger cursor="pointer" py={4} fontWeight="medium">
                       <Box flex="1" textAlign="start">
-                        {f.q}
+                        {f.question}
                       </Box>
                       <Accordion.ItemIndicator />
                     </Accordion.ItemTrigger>
                     <Accordion.ItemContent>
                       <Accordion.ItemBody pb={4} color="fg.muted">
-                        {f.a}
+                        {f.answer}
                       </Accordion.ItemBody>
                     </Accordion.ItemContent>
                   </Accordion.Item>
