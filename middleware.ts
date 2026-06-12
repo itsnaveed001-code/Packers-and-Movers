@@ -3,8 +3,37 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 type CookieSet = { name: string; value: string; options?: CookieOptions };
 
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
 export async function middleware(request: NextRequest) {
-  // Only run middleware on /admin/* (config below enforces this further).
+  // CSRF guard for the public APIs: browsers always attach an Origin
+  // header to cross-origin POSTs — reject mutating requests whose Origin
+  // doesn't match the site. Requests without an Origin (curl, server-to-
+  // server, same-origin GET) pass through; routes still do their own auth.
+  if (request.nextUrl.pathname.startsWith('/api')) {
+    if (!SAFE_METHODS.has(request.method)) {
+      const origin = request.headers.get('origin');
+      if (origin) {
+        let originHost: string | null = null;
+        try {
+          originHost = new URL(origin).host;
+        } catch {
+          // malformed Origin → treat as mismatch
+        }
+        const hostHeader = request.headers.get('host');
+        if (originHost !== request.nextUrl.host && originHost !== hostHeader) {
+          return NextResponse.json(
+            { error: 'cross_origin_forbidden' },
+            { status: 403 },
+          );
+        }
+      }
+    }
+    // No admin-session work needed on API paths.
+    return NextResponse.next();
+  }
+
+  // Only run the auth logic on /admin/* (config below enforces this further).
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -54,5 +83,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/:path*'],
 };
