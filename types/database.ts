@@ -31,6 +31,17 @@ export type FunnelEventType =
 
 export type ContentBlockPage = 'home' | 'about' | 'contact' | 'global';
 
+export type OtpPurpose = 'booking' | 'cancel' | 'manage';
+
+/** Custom-move resource selections persisted on bookings.custom_resources. */
+export type CustomResources = {
+  workers: number;
+  vehicle: string;
+  hours: number;
+  /** Indicative price shown at booking time, in paise. */
+  indicative_price_paise?: number;
+};
+
 export type HomeFeatureSection = 'why_choose' | 'how_it_works' | 'example_card';
 
 export type Database = {
@@ -49,6 +60,7 @@ export type Database = {
           display_order: number;
           is_active: boolean;
           coming_soon: boolean;
+          is_custom: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -64,6 +76,7 @@ export type Database = {
           display_order?: number;
           is_active?: boolean;
           coming_soon?: boolean;
+          is_custom?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -138,6 +151,10 @@ export type Database = {
           paid_at: string | null;
           payment_method: PaymentMethod | string | null;
           deleted_at: string | null;
+          email_verified: boolean;
+          cancelled_at: string | null;
+          cancel_reason: string | null;
+          custom_resources: CustomResources | null;
           created_at: string;
           updated_at: string;
         };
@@ -166,6 +183,10 @@ export type Database = {
           paid_at?: string | null;
           payment_method?: PaymentMethod | string | null;
           deleted_at?: string | null;
+          email_verified?: boolean;
+          cancelled_at?: string | null;
+          cancel_reason?: string | null;
+          custom_resources?: CustomResources | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -516,6 +537,32 @@ export type Database = {
           },
         ];
       };
+      email_otps: {
+        Row: {
+          id: string;
+          email: string;
+          code_hash: string;
+          purpose: OtpPurpose;
+          attempts: number;
+          expires_at: string;
+          consumed_at: string | null;
+          ip: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          code_hash: string;
+          purpose?: OtpPurpose;
+          attempts?: number;
+          expires_at: string;
+          consumed_at?: string | null;
+          ip?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['email_otps']['Insert']>;
+        Relationships: [];
+      };
       contact_submissions: {
         Row: {
           id: string;
@@ -573,3 +620,4 @@ export type ServiceInclude = Database['public']['Tables']['service_includes']['R
 export type PricingTier = Database['public']['Tables']['pricing_tiers']['Row'];
 export type ContactSubmission =
   Database['public']['Tables']['contact_submissions']['Row'];
+export type EmailOtp = Database['public']['Tables']['email_otps']['Row'];
