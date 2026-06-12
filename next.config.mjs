@@ -24,6 +24,10 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
           // Force HTTPS for 2 years once seen over HTTPS.
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
+          // Isolate the browsing context from cross-origin window handles.
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+          // No speculative DNS lookups leaking visited-link hints.
+          { key: 'X-DNS-Prefetch-Control', value: 'off' },
         ],
       },
     ];
