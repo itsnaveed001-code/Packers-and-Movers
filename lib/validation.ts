@@ -217,6 +217,41 @@ export const createVerifiedBookingSchema = createBookingSchema.extend({
 
 export type CreateVerifiedBookingInput = z.infer<typeof createVerifiedBookingSchema>;
 
+// The server-validated booking payload parked in payment_orders between
+// order creation and payment capture. Written by /api/payments/order,
+// re-parsed defensively by the verify/webhook routes before insert.
+export const storedBookingPayloadSchema = z.object({
+  service_id: z.string().regex(uuidRegex),
+  service_name: z.string().min(1).max(120),
+  booking_date: z.string().regex(dateRegex),
+  booking_time: z.string().regex(timeRegex),
+  duration_hours: z.number().int().min(1).max(24),
+  customer_name: z.string().min(2).max(60),
+  customer_phone: z.string().min(10).max(20),
+  customer_email: z.string().email().max(120),
+  pickup_address: z.string().min(10).max(300),
+  pickup_city: z.string().min(2).max(60),
+  pickup_pincode: z.string().regex(pincodeRegex),
+  dropoff_address: z.string().min(10).max(300),
+  dropoff_city: z.string().min(2).max(60),
+  dropoff_pincode: z.string().regex(pincodeRegex),
+  notes: z.string().max(500).nullable(),
+  custom_resources: customResourcesSchema
+    .extend({ indicative_price_paise: z.number().int().nonnegative().optional() })
+    .nullable(),
+});
+
+export type StoredBookingPayload = z.infer<typeof storedBookingPayloadSchema>;
+
+// POST /api/payments/verify — Razorpay Checkout success handback.
+export const paymentVerifySchema = z.object({
+  razorpay_order_id: z.string().trim().min(8).max(64),
+  razorpay_payment_id: z.string().trim().min(8).max(64),
+  razorpay_signature: z.string().trim().min(16).max(256),
+});
+
+export type PaymentVerifyInput = z.infer<typeof paymentVerifySchema>;
+
 // POST /api/bookings/my — either a fresh manage OTP code, a still-valid
 // manage token, or a quick read-only reference_code + email lookup.
 export const myBookingsSchema = z

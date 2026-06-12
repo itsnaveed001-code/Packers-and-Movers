@@ -24,7 +24,7 @@ function row(label: string, value: string): string {
   return `<tr><td style="padding:8px 0;color:${MUTED};font-size:13px;width:140px;vertical-align:top;">${label}</td><td style="padding:8px 0;font-size:14px;color:${TEXT};">${value}</td></tr>`;
 }
 
-type BookingEmailData = {
+export type BookingEmailData = {
   reference_code: string;
   service_name: string;
   booking_date: string; // YYYY-MM-DD
@@ -39,6 +39,8 @@ type BookingEmailData = {
   dropoff_city: string;
   dropoff_pincode: string;
   notes?: string | null;
+  /** Online deposit captured via Razorpay; null/absent = no deposit taken. */
+  deposit?: { amountInr: number; paymentId: string } | null;
 };
 
 function formatDate(yyyyMmDd: string): string {
@@ -70,6 +72,9 @@ export function bookingTemplateParams(data: BookingEmailData): Record<string, st
     PICKUP: `${data.pickup_address}, ${data.pickup_city} - ${data.pickup_pincode}`,
     DROPOFF: `${data.dropoff_address}, ${data.dropoff_city} - ${data.dropoff_pincode}`,
     NOTES: data.notes && data.notes.trim() ? data.notes : '—',
+    DEPOSIT: data.deposit
+      ? `₹${data.deposit.amountInr} paid online (${data.deposit.paymentId})`
+      : 'Not collected',
     ADMIN_URL: `${BUSINESS.siteUrl}/admin`,
   };
 }
@@ -91,6 +96,14 @@ export function adminNotificationEmail(data: BookingEmailData): { subject: strin
       ${row('Pickup', `${data.pickup_address}, ${data.pickup_city} – ${data.pickup_pincode}`)}
       ${row('Drop-off', `${data.dropoff_address}, ${data.dropoff_city} – ${data.dropoff_pincode}`)}
       ${data.notes ? row('Notes', data.notes) : ''}
+      ${
+        data.deposit
+          ? row(
+              'Deposit',
+              `<strong>₹${data.deposit.amountInr} paid online</strong> · Razorpay payment <span style="font-family:'SF Mono',Menlo,monospace;">${data.deposit.paymentId}</span>`,
+            )
+          : ''
+      }
     </table>
 
     <p style="margin:20px 0 0;">
@@ -120,12 +133,22 @@ export function customerConfirmationEmail(data: BookingEmailData): {
       to confirm your booking and walk you through the details.
     </p>
 
+    ${
+      data.deposit
+        ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px 14px;margin:0 0 16px;font-size:14px;color:#065f46;">
+      <strong>Deposit paid: ₹${data.deposit.amountInr}</strong> (Razorpay payment <span style="font-family:'SF Mono',Menlo,monospace;">${data.deposit.paymentId}</span>).<br/>
+      Fully refundable if you cancel at least 12 hours before your slot.
+    </div>`
+        : ''
+    }
+
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #e2e8f0;margin-top:8px;">
       ${row('Service', data.service_name)}
       ${row('Date', formatDate(data.booking_date))}
       ${row('Time', formatTimeLabel(data.booking_time))}
       ${row('Pickup', `${data.pickup_city} – ${data.pickup_pincode}`)}
       ${row('Drop-off', `${data.dropoff_city} – ${data.dropoff_pincode}`)}
+      ${data.deposit ? row('Deposit', `₹${data.deposit.amountInr} paid · refundable on cancellation ≥ 12 h before`) : ''}
     </table>
 
     <p style="margin:20px 0 0;font-size:14px;">
@@ -177,6 +200,65 @@ export function otpEmail(data: {
 
     <p style="margin:0 0 8px;font-size:14px;">This code expires in <strong>${data.expiryMinutes} minutes</strong>. Please don't share it with anyone.</p>
     <p style="margin:0;color:${MUTED};font-size:13px;">Didn't request this? You can safely ignore this email — no booking will be made.</p>
+  `;
+  return { subject, html: shell(inner) };
+}
+
+/**
+ * Sent to the customer after a self-service cancellation. The refund
+ * line reflects what actually happened to the deposit:
+ *  - 'refunded'      → refund initiated, 5–7 working days
+ *  - 'refund_failed' → we'll process it manually
+ *  - null            → no deposit was taken, nothing to refund
+ */
+export function customerCancellationEmail(data: {
+  reference_code: string;
+  service_name: string;
+  booking_date: string;
+  booking_time: string;
+  customer_name: string;
+  refund:
+    | { status: 'refunded'; amountInr: number; refundId: string }
+    | { status: 'refund_failed'; amountInr: number }
+    | null;
+}): { subject: string; html: string } {
+  const subject = `Booking cancelled — ${BUSINESS.name} (${data.reference_code})`;
+  const refundBlock =
+    data.refund === null
+      ? ''
+      : data.refund.status === 'refunded'
+        ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:12px 14px;margin:0 0 16px;font-size:14px;color:#065f46;">
+      <strong>Deposit refund initiated: ₹${data.refund.amountInr}</strong><br/>
+      Refund reference <span style="font-family:'SF Mono',Menlo,monospace;">${data.refund.refundId}</span>.
+      It usually reaches your original payment method within 5–7 working days.
+    </div>`
+        : `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin:0 0 16px;font-size:14px;color:#92400e;">
+      <strong>Deposit refund (₹${data.refund.amountInr}) is being processed manually.</strong><br/>
+      The automatic refund didn't go through, so our team will issue it by hand and
+      confirm with you. No action is needed from your side.
+    </div>`;
+
+  const inner = `
+    <h2 style="margin:0 0 6px;font-size:18px;color:${TEXT};">Booking cancelled</h2>
+    <p style="margin:0 0 16px;color:${MUTED};font-size:14px;">
+      Hi ${data.customer_name.split(' ')[0]}, your booking
+      <strong style="color:${TEXT};">${data.reference_code}</strong> has been cancelled
+      and the slot has been freed.
+    </p>
+
+    ${refundBlock}
+
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #e2e8f0;margin-top:8px;">
+      ${row('Service', data.service_name)}
+      ${row('Date', formatDate(data.booking_date))}
+      ${row('Time', formatTimeLabel(data.booking_time))}
+    </table>
+
+    <p style="margin:20px 0 0;font-size:14px;">
+      Plans changed again? You can always
+      <a href="${BUSINESS.siteUrl}/book" style="color:${BRAND};">book a new move</a>
+      or call us at <a href="tel:${BUSINESS.phone}" style="color:${BRAND};">${BUSINESS.phone}</a>.
+    </p>
   `;
   return { subject, html: shell(inner) };
 }
