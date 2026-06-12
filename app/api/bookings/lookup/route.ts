@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await supabase
     .from('bookings')
     .select(
-      'reference_code, booking_date, booking_time, duration_hours, customer_name, status, pickup_city, dropoff_city, service:services(name, slug)',
+      'reference_code, booking_date, booking_time, duration_hours, customer_name, status, pickup_city, dropoff_city, deposit_amount_inr, payment_status, service:services(name, slug)',
     )
     .eq('reference_code', parsed.data)
     .maybeSingle();
@@ -43,6 +43,8 @@ export async function GET(req: NextRequest) {
     customer_first_name: firstName,
     pickup_city: data.pickup_city,
     dropoff_city: data.dropoff_city,
+    deposit_amount_inr: data.deposit_amount_inr,
+    payment_status: data.payment_status,
     service: data.service,
   });
 }

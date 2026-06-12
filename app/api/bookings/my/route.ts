@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const SUMMARY_COLUMNS =
-  'id, reference_code, booking_date, booking_time, duration_hours, status, pickup_city, dropoff_city, custom_resources, created_at, service:services(name, slug)';
+  'id, reference_code, booking_date, booking_time, duration_hours, status, pickup_city, dropoff_city, custom_resources, deposit_amount_inr, payment_status, created_at, service:services(name, slug)';
 
 type SummaryRow = {
   id: string;
@@ -21,6 +21,8 @@ type SummaryRow = {
   pickup_city: string;
   dropoff_city: string;
   custom_resources: Record<string, unknown> | null;
+  deposit_amount_inr: number | null;
+  payment_status: string | null;
   created_at: string;
   service: { name: string; slug: string } | null;
 };
@@ -37,6 +39,8 @@ function toSummary(b: SummaryRow) {
     pickup_city: b.pickup_city,
     dropoff_city: b.dropoff_city,
     custom_resources: b.custom_resources,
+    deposit_amount_inr: b.deposit_amount_inr,
+    payment_status: b.payment_status,
     created_at: b.created_at,
     service: b.service,
     cancellable: isCancellable(b.status, b.booking_date, b.booking_time),

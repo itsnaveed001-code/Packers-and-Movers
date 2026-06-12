@@ -34,6 +34,14 @@ function trimSeconds(t: string): string {
   return t.length >= 5 ? t.slice(0, 5) : t;
 }
 
+const DEPOSIT_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  paid: 'Paid',
+  failed: 'Failed',
+  refunded: 'Refunded',
+  refund_failed: 'Refund failed — retry manually',
+};
+
 const RESCHEDULE_ERROR_MESSAGES: Record<string, string> = {
   date_in_past: "Can't reschedule into the past.",
   date_too_far: 'Date is beyond the advance-booking window in Settings.',
@@ -310,6 +318,79 @@ export function BookingDetail({ booking }: { booking: DetailBooking }) {
                 </p>
               )}
             </div>
+
+            {booking.payment_status && (
+              <div>
+                <p className="text-sm font-medium">Online deposit</p>
+                <div className="mt-1.5 space-y-1.5 rounded-lg border bg-secondary/30 p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Status
+                    </span>
+                    <span
+                      className={
+                        booking.payment_status === 'paid' ||
+                        booking.payment_status === 'refunded'
+                          ? 'font-medium text-emerald-700'
+                          : booking.payment_status === 'refund_failed'
+                            ? 'font-medium text-amber-700'
+                            : 'font-medium text-muted-foreground'
+                      }
+                    >
+                      {DEPOSIT_STATUS_LABELS[booking.payment_status] ??
+                        booking.payment_status}
+                    </span>
+                  </div>
+                  {booking.deposit_amount_inr != null && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Amount
+                      </span>
+                      <span className="font-medium">₹{booking.deposit_amount_inr}</span>
+                    </div>
+                  )}
+                  {booking.razorpay_payment_id && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Payment id
+                      </p>
+                      <p className="break-all font-mono text-xs">
+                        {booking.razorpay_payment_id}
+                      </p>
+                    </div>
+                  )}
+                  {booking.razorpay_order_id && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Order id
+                      </p>
+                      <p className="break-all font-mono text-xs">
+                        {booking.razorpay_order_id}
+                      </p>
+                    </div>
+                  )}
+                  {booking.refund_id && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Refund id
+                      </p>
+                      <p className="break-all font-mono text-xs">{booking.refund_id}</p>
+                      {booking.refunded_at && (
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(booking.refunded_at), 'd MMM yyyy, p')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {booking.payment_status === 'refund_failed' && (
+                    <p className="text-xs text-amber-700">
+                      Automatic refund failed — issue it manually from the Razorpay
+                      dashboard (refund.processed webhook will update this status).
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div>
               <p className="text-sm font-medium">Finance</p>

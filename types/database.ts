@@ -11,6 +11,17 @@ export type BookingStatus =
 
 export type PaymentMethod = 'cash' | 'upi' | 'bank_transfer' | 'card';
 
+/** Online-deposit lifecycle. Null on bookings made without a deposit. */
+export type PaymentStatus =
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'refunded'
+  | 'refund_failed';
+
+/** payment_orders.status — order staged, paid, or last attempt failed. */
+export type PaymentOrderStatus = 'created' | 'paid' | 'failed';
+
 export type BookingEventType =
   | 'created'
   | 'confirmed'
@@ -155,6 +166,12 @@ export type Database = {
           cancelled_at: string | null;
           cancel_reason: string | null;
           custom_resources: CustomResources | null;
+          deposit_amount_inr: number | null;
+          razorpay_order_id: string | null;
+          razorpay_payment_id: string | null;
+          payment_status: PaymentStatus | null;
+          refund_id: string | null;
+          refunded_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -187,6 +204,12 @@ export type Database = {
           cancelled_at?: string | null;
           cancel_reason?: string | null;
           custom_resources?: CustomResources | null;
+          deposit_amount_inr?: number | null;
+          razorpay_order_id?: string | null;
+          razorpay_payment_id?: string | null;
+          payment_status?: PaymentStatus | null;
+          refund_id?: string | null;
+          refunded_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -563,6 +586,43 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['email_otps']['Insert']>;
         Relationships: [];
       };
+      payment_orders: {
+        Row: {
+          id: string;
+          razorpay_order_id: string;
+          amount_paise: number;
+          currency: string;
+          status: PaymentOrderStatus;
+          customer_email: string;
+          booking_payload: Record<string, unknown>;
+          booking_id: string | null;
+          razorpay_payment_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          razorpay_order_id: string;
+          amount_paise: number;
+          currency?: string;
+          status?: PaymentOrderStatus;
+          customer_email: string;
+          booking_payload: Record<string, unknown>;
+          booking_id?: string | null;
+          razorpay_payment_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['payment_orders']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'payment_orders_booking_id_fkey';
+            columns: ['booking_id'];
+            referencedRelation: 'bookings';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       contact_submissions: {
         Row: {
           id: string;
@@ -621,3 +681,4 @@ export type PricingTier = Database['public']['Tables']['pricing_tiers']['Row'];
 export type ContactSubmission =
   Database['public']['Tables']['contact_submissions']['Row'];
 export type EmailOtp = Database['public']['Tables']['email_otps']['Row'];
+export type PaymentOrder = Database['public']['Tables']['payment_orders']['Row'];

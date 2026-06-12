@@ -37,10 +37,36 @@ type BookingSummary = {
     hours?: number;
     indicative_price_paise?: number;
   } | null;
+  deposit_amount_inr?: number | null;
+  payment_status?: string | null;
   created_at: string;
   service: { name: string; slug: string } | null;
   cancellable: boolean;
 };
+
+/** Customer-facing wording for the online-deposit state. */
+function depositLine(b: BookingSummary): { text: string; color: string } | null {
+  if (!b.payment_status || !b.deposit_amount_inr) return null;
+  switch (b.payment_status) {
+    case 'paid':
+      return {
+        text: `Deposit ₹${b.deposit_amount_inr} paid — refundable if you cancel ≥ ${CANCEL_MIN_HOURS_BEFORE} h before`,
+        color: 'green.700',
+      };
+    case 'refunded':
+      return {
+        text: `Deposit ₹${b.deposit_amount_inr} refunded — usually reaches you in 5–7 working days`,
+        color: 'green.700',
+      };
+    case 'refund_failed':
+      return {
+        text: `Deposit ₹${b.deposit_amount_inr} refund is being processed manually — no action needed`,
+        color: 'orange.700',
+      };
+    default:
+      return null;
+  }
+}
 
 const STATUS_PALETTE: Record<BookingStatus, string> = {
   pending: 'orange',
@@ -70,7 +96,7 @@ function BookingCard({
   booking: BookingSummary;
   email: string;
   token: string | null;
-  onCancelled: (id: string) => void;
+  onCancelled: (id: string, refundStatus: 'refunded' | 'refund_failed' | null) => void;
 }) {
   const [confirming, setConfirming] = React.useState(false);
   const [cancelling, setCancelling] = React.useState(false);
@@ -88,14 +114,22 @@ function BookingCard({
         ok?: boolean;
         error?: string;
         windowHours?: number;
+        refund?: { status: 'refunded' | 'refund_failed'; amount_inr: number } | null;
       };
       if (res.ok && body.ok) {
+        const refundNote =
+          body.refund?.status === 'refunded'
+            ? ` Your ₹${body.refund.amount_inr} deposit refund is on its way (5–7 working days).`
+            : body.refund?.status === 'refund_failed'
+              ? ` Your ₹${body.refund.amount_inr} deposit will be refunded manually by our team.`
+              : '';
         toaster.create({
           type: 'success',
           title: 'Booking cancelled',
-          description: `${booking.reference_code} is cancelled — the slot has been freed.`,
+          description: `${booking.reference_code} is cancelled — the slot has been freed.${refundNote}`,
+          duration: refundNote ? 10000 : undefined,
         });
-        onCancelled(booking.id);
+        onCancelled(booking.id, body.refund?.status ?? null);
       } else if (body.error === 'too_late_to_cancel') {
         toaster.create({
           type: 'error',
@@ -161,6 +195,15 @@ function BookingCard({
             ` · indicative ${formatINR(booking.custom_resources.indicative_price_paise)}`}
         </Text>
       )}
+
+      {(() => {
+        const dep = depositLine(booking);
+        return dep ? (
+          <Text mt={1} fontSize="xs" fontWeight="medium" color={dep.color}>
+            {dep.text}
+          </Text>
+        ) : null;
+      })()}
 
       {booking.cancellable && token && (
         <Flex mt={3} gap={2} align="center">
@@ -271,11 +314,21 @@ export function MyBookings() {
     void fetchBookings(newToken);
   }
 
-  function handleCancelled(id: string) {
+  function handleCancelled(
+    id: string,
+    refundStatus: 'refunded' | 'refund_failed' | null,
+  ) {
     setBookings(
       (prev) =>
         prev?.map((b) =>
-          b.id === id ? { ...b, status: 'cancelled' as const, cancellable: false } : b,
+          b.id === id
+            ? {
+                ...b,
+                status: 'cancelled' as const,
+                cancellable: false,
+                ...(refundStatus ? { payment_status: refundStatus } : {}),
+              }
+            : b,
         ) ?? null,
     );
   }

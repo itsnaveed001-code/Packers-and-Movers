@@ -1,9 +1,11 @@
 import { Suspense } from 'react';
 import { Box, Container, Heading, Text } from '@chakra-ui/react';
-import { BookingFlow } from '@/components/booking/BookingFlow';
+import { BookingFlow, type PaymentsConfig } from '@/components/booking/BookingFlow';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getActiveServices } from '@/lib/queries';
 import { DEFAULT_RATE_CARD, loadRateCard, type CustomRateCard } from '@/lib/customPricing';
+import { DEPOSIT_AMOUNT_INR } from '@/lib/paymentsPolicy';
+import { getRazorpayKeyId, paymentsEnabled } from '@/lib/razorpay';
 import { pageMetadata } from '@/lib/seo';
 
 export const metadata = pageMetadata({
@@ -67,6 +69,13 @@ export default async function BookPage() {
     getRateCard(),
   ]);
 
+  // Deposit flow switches on automatically once the Razorpay env vars
+  // exist; until then the wizard books without payment (and the server
+  // logs a warning). Only the public key id is sent to the client.
+  const payments: PaymentsConfig = paymentsEnabled()
+    ? { enabled: true, keyId: getRazorpayKeyId(), depositInr: DEPOSIT_AMOUNT_INR }
+    : { enabled: false, keyId: null, depositInr: 0 };
+
   return (
     <Box as="section" bg="bg.subtle" py={{ base: 8, sm: 12 }}>
       <Container maxW="7xl">
@@ -75,7 +84,9 @@ export default async function BookPage() {
             Book your move
           </Heading>
           <Text mt={2} fontSize={{ base: 'sm', sm: 'md' }} color="fg.muted">
-            Five quick steps. No payment now — pay on the day of service.
+            {payments.enabled
+              ? `Five quick steps. Just a refundable ₹${payments.depositInr} deposit secures your slot — the rest is payable on the day of service.`
+              : 'Five quick steps. No payment now — pay on the day of service.'}
           </Text>
         </Box>
         {services.length === 0 ? (
@@ -104,6 +115,7 @@ export default async function BookPage() {
               services={services}
               availability={availability}
               rateCard={rateCard}
+              payments={payments}
             />
           </Suspense>
         )}

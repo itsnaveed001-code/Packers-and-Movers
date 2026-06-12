@@ -1,33 +1,27 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { isCrossOriginForbidden } from '@/lib/apiGuard';
 
 type CookieSet = { name: string; value: string; options?: CookieOptions };
 
-const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-
 export async function middleware(request: NextRequest) {
-  // CSRF guard for the public APIs: browsers always attach an Origin
-  // header to cross-origin POSTs — reject mutating requests whose Origin
-  // doesn't match the site. Requests without an Origin (curl, server-to-
-  // server, same-origin GET) pass through; routes still do their own auth.
+  // CSRF guard for the public APIs — logic lives in lib/apiGuard.ts so
+  // the self-test can assert it (incl. the Razorpay webhook exemption;
+  // webhooks authenticate via X-Razorpay-Signature in the route instead).
   if (request.nextUrl.pathname.startsWith('/api')) {
-    if (!SAFE_METHODS.has(request.method)) {
-      const origin = request.headers.get('origin');
-      if (origin) {
-        let originHost: string | null = null;
-        try {
-          originHost = new URL(origin).host;
-        } catch {
-          // malformed Origin → treat as mismatch
-        }
-        const hostHeader = request.headers.get('host');
-        if (originHost !== request.nextUrl.host && originHost !== hostHeader) {
-          return NextResponse.json(
-            { error: 'cross_origin_forbidden' },
-            { status: 403 },
-          );
-        }
-      }
+    if (
+      isCrossOriginForbidden({
+        method: request.method,
+        pathname: request.nextUrl.pathname,
+        origin: request.headers.get('origin'),
+        requestHost: request.nextUrl.host,
+        hostHeader: request.headers.get('host'),
+      })
+    ) {
+      return NextResponse.json(
+        { error: 'cross_origin_forbidden' },
+        { status: 403 },
+      );
     }
     // No admin-session work needed on API paths.
     return NextResponse.next();

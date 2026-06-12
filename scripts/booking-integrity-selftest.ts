@@ -1,6 +1,6 @@
 /**
- * Booking-integrity self-test. Pure-logic assertions against the same
- * modules the API routes use — no database or network required.
+ * Booking-integrity + payments self-test. Pure-logic assertions against
+ * the same modules the API routes use — no database or network required.
  *
  *   npx tsx scripts/booking-integrity-selftest.ts
  *
@@ -10,6 +10,12 @@
 // The OTP module resolves its secret from env at call time — set one for
 // the test run before any hashing/signing happens.
 process.env.BOOKING_OTP_SECRET = 'selftest-secret-do-not-use-in-prod';
+
+// Start from a known payments-env state; individual checks set/clear
+// these to exercise both the enabled path and the graceful fallback.
+delete process.env.RAZORPAY_KEY_ID;
+delete process.env.RAZORPAY_KEY_SECRET;
+delete process.env.RAZORPAY_WEBHOOK_SECRET;
 
 import {
   codeMatches,
@@ -35,6 +41,22 @@ import {
   computeCustomPrice,
   DEFAULT_RATE_CARD,
 } from '../lib/customPricing';
+import { createHmac } from 'node:crypto';
+import {
+  capturedEventOutcome,
+  DEPOSIT_AMOUNT_INR,
+  depositAmountPaise,
+  failedEventOutcome,
+  REFUND_ON_CANCEL,
+  shouldRefundOnCancel,
+  statusAfterRefundAttempt,
+} from '../lib/paymentsPolicy';
+import {
+  paymentsEnabled,
+  verifyCheckoutSignature,
+  verifyWebhookSignature,
+} from '../lib/razorpay';
+import { isCrossOriginForbidden, isCsrfExempt } from '../lib/apiGuard';
 
 let passed = 0;
 let failed = 0;
@@ -234,6 +256,194 @@ slotRows[0].status = 'cancelled';
 check(
   'cancelling one booking frees the slot for availability',
   availableCount(slotRows, '09:00', 2) === 1,
+);
+
+console.log('--- Deposit amount (server-derived) ---');
+check('deposit policy is ₹299', DEPOSIT_AMOUNT_INR === 299);
+check(
+  'order amount = ₹299 → 29900 paise (never client-supplied)',
+  depositAmountPaise() === 29_900 &&
+    depositAmountPaise() === DEPOSIT_AMOUNT_INR * 100,
+);
+
+console.log('--- Razorpay signature verification ---');
+const KEY_SECRET = 'selftest-razorpay-key-secret';
+const WEBHOOK_SECRET = 'selftest-razorpay-webhook-secret';
+const ORDER_ID = 'order_TestABC123';
+const PAYMENT_ID = 'pay_TestXYZ789';
+// Reference HMACs computed independently of lib/razorpay.ts.
+const checkoutSig = createHmac('sha256', KEY_SECRET)
+  .update(`${ORDER_ID}|${PAYMENT_ID}`)
+  .digest('hex');
+check(
+  'valid checkout signature accepted',
+  verifyCheckoutSignature(
+    { orderId: ORDER_ID, paymentId: PAYMENT_ID, signature: checkoutSig },
+    KEY_SECRET,
+  ),
+);
+check(
+  'tampered signature rejected',
+  !verifyCheckoutSignature(
+    { orderId: ORDER_ID, paymentId: PAYMENT_ID, signature: `${checkoutSig.slice(0, -2)}ff` },
+    KEY_SECRET,
+  ),
+);
+check(
+  'signature for a different payment id rejected',
+  !verifyCheckoutSignature(
+    { orderId: ORDER_ID, paymentId: 'pay_Forged000000', signature: checkoutSig },
+    KEY_SECRET,
+  ),
+);
+check(
+  'signature minted with the wrong secret rejected',
+  !verifyCheckoutSignature(
+    {
+      orderId: ORDER_ID,
+      paymentId: PAYMENT_ID,
+      signature: createHmac('sha256', 'attacker-secret')
+        .update(`${ORDER_ID}|${PAYMENT_ID}`)
+        .digest('hex'),
+    },
+    KEY_SECRET,
+  ),
+);
+
+const webhookBody = JSON.stringify({
+  event: 'payment.captured',
+  payload: { payment: { entity: { id: PAYMENT_ID, order_id: ORDER_ID } } },
+});
+const webhookSig = createHmac('sha256', WEBHOOK_SECRET)
+  .update(webhookBody)
+  .digest('hex');
+check(
+  'valid webhook signature accepted',
+  verifyWebhookSignature(webhookBody, webhookSig, WEBHOOK_SECRET),
+);
+check(
+  'webhook body altered after signing rejected',
+  !verifyWebhookSignature(`${webhookBody} `, webhookSig, WEBHOOK_SECRET),
+);
+check(
+  'webhook with empty signature rejected',
+  !verifyWebhookSignature(webhookBody, '', WEBHOOK_SECRET),
+);
+
+console.log('--- Webhook idempotency & ordering ---');
+check(
+  'first capture for a staged order creates the booking',
+  capturedEventOutcome({ found: true, bookingId: null }) === 'create_booking',
+);
+check(
+  'duplicate capture (booking exists) only syncs status — no second booking',
+  capturedEventOutcome({ found: true, bookingId: 'bk_1' }) === 'mark_paid',
+);
+check(
+  'capture for an unknown order is ignored',
+  capturedEventOutcome({ found: false, bookingId: null }) === 'ignore',
+);
+check(
+  'payment.failed marks a staged order failed (no booking is created)',
+  failedEventOutcome({ found: true, status: 'created' }) === 'mark_failed',
+);
+check(
+  'payment.failed after a capture never regresses a paid order',
+  failedEventOutcome({ found: true, status: 'paid' }) === 'ignore',
+);
+check(
+  'failed→captured retry on the same order still books (failed does not block)',
+  capturedEventOutcome({ found: true, bookingId: null }) === 'create_booking' &&
+    failedEventOutcome({ found: true, status: 'failed' }) === 'mark_failed',
+);
+
+console.log('--- Refund on cancellation ---');
+check('refund-on-cancel policy is on', REFUND_ON_CANCEL === true);
+check(
+  'captured deposit is refunded on a valid cancel',
+  shouldRefundOnCancel('paid', PAYMENT_ID),
+);
+check(
+  'no-deposit booking (fallback mode) skips the refund call',
+  !shouldRefundOnCancel(null, null),
+);
+check(
+  'already-refunded deposit is not refunded twice',
+  !shouldRefundOnCancel('refunded', PAYMENT_ID),
+);
+check(
+  'paid status without a payment id is skipped (defensive)',
+  !shouldRefundOnCancel('paid', null),
+);
+check(
+  'successful refund → payment_status=refunded',
+  statusAfterRefundAttempt(true) === 'refunded',
+);
+check(
+  'failed refund API call → flagged refund_failed for manual retry',
+  statusAfterRefundAttempt(false) === 'refund_failed',
+);
+
+console.log('--- Payments env fallback (graceful degradation) ---');
+check(
+  'Razorpay env missing → payments disabled, wizard books without deposit',
+  paymentsEnabled() === false,
+);
+process.env.RAZORPAY_KEY_ID = 'rzp_test_selftest';
+process.env.RAZORPAY_KEY_SECRET = KEY_SECRET;
+check(
+  'env present → payments enabled (direct unpaid POST /api/bookings returns 402)',
+  paymentsEnabled() === true,
+);
+delete process.env.RAZORPAY_KEY_ID;
+delete process.env.RAZORPAY_KEY_SECRET;
+check('env removed again → back to fallback booking', paymentsEnabled() === false);
+
+console.log('--- Webhook exempt from same-origin POST guard ---');
+const HOST = 'easyshiftx.com';
+check(
+  'webhook path is CSRF-exempt by configuration',
+  isCsrfExempt('/api/payments/webhook'),
+);
+check(
+  'Razorpay webhook POST (no Origin header) passes the guard',
+  !isCrossOriginForbidden({
+    method: 'POST',
+    pathname: '/api/payments/webhook',
+    origin: null,
+    requestHost: HOST,
+    hostHeader: HOST,
+  }),
+);
+check(
+  'webhook POST passes even with a foreign Origin (HMAC auths it instead)',
+  !isCrossOriginForbidden({
+    method: 'POST',
+    pathname: '/api/payments/webhook',
+    origin: 'https://api.razorpay.com',
+    requestHost: HOST,
+    hostHeader: HOST,
+  }),
+);
+check(
+  'other API POSTs with a foreign Origin are still blocked',
+  isCrossOriginForbidden({
+    method: 'POST',
+    pathname: '/api/bookings',
+    origin: 'https://evil.example',
+    requestHost: HOST,
+    hostHeader: HOST,
+  }),
+);
+check(
+  'same-origin booking POST still passes',
+  !isCrossOriginForbidden({
+    method: 'POST',
+    pathname: '/api/bookings',
+    origin: `https://${HOST}`,
+    requestHost: HOST,
+    hostHeader: HOST,
+  }),
 );
 
 console.log('---');
