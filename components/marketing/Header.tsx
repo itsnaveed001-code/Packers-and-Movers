@@ -21,6 +21,7 @@ import { Menu } from 'lucide-react';
 const NAV = [
   { href: '/', label: 'Home' },
   { href: '/services', label: 'Services' },
+  { href: '/booking-status', label: 'Track booking' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ];
