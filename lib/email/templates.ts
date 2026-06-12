@@ -139,6 +139,48 @@ export function customerConfirmationEmail(data: BookingEmailData): {
   return { subject, html: shell(inner) };
 }
 
+/**
+ * Variables for the hosted Brevo OTP template (BREVO_OTP_TEMPLATE_ID).
+ * Keys map to {{ params.KEY }} tokens — keep in sync with the template
+ * content in Brevo. Mirrors bookingTemplateParams() above.
+ */
+export function otpTemplateParams(data: {
+  name: string;
+  code: string;
+  expiryMinutes: number;
+}): Record<string, string> {
+  return {
+    OTP: data.code,
+    NAME: data.name?.trim() ? data.name.split(' ')[0] : 'there',
+    EXPIRY: String(data.expiryMinutes),
+  };
+}
+
+/**
+ * Inline OTP email — fallback used when BREVO_OTP_TEMPLATE_ID is unset or
+ * the Resend provider is active (Resend always sends raw HTML).
+ */
+export function otpEmail(data: {
+  name: string;
+  code: string;
+  expiryMinutes: number;
+}): { subject: string; html: string } {
+  const firstName = data.name?.trim() ? data.name.split(' ')[0] : 'there';
+  const subject = `Your ${BUSINESS.name} verification code is ${data.code}`;
+  const inner = `
+    <h2 style="margin:0 0 6px;font-size:18px;color:${TEXT};">Verify your booking</h2>
+    <p style="margin:0 0 16px;color:${MUTED};font-size:14px;">Hi ${firstName}, use this code to confirm your move request. It keeps your slot reserved and lets our team reach you.</p>
+
+    <div style="text-align:center;background:${BG};border:1px dashed ${BRAND};border-radius:10px;padding:18px;margin:0 0 18px;">
+      <div style="font-family:'SF Mono',Menlo,monospace;font-size:30px;font-weight:700;color:${BRAND};letter-spacing:8px;">${data.code}</div>
+    </div>
+
+    <p style="margin:0 0 8px;font-size:14px;">This code expires in <strong>${data.expiryMinutes} minutes</strong>. Please don't share it with anyone.</p>
+    <p style="margin:0;color:${MUTED};font-size:13px;">Didn't request this? You can safely ignore this email — no booking will be made.</p>
+  `;
+  return { subject, html: shell(inner) };
+}
+
 export function contactFormEmail(data: {
   name: string;
   email: string;
