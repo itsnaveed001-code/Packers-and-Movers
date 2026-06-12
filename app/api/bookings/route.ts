@@ -1,9 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { createBookingSchema } from '@/lib/validation';
+import { createVerifiedBookingSchema } from '@/lib/validation';
 import { generateReferenceCode } from '@/lib/utils';
 import { BUSINESS } from '@/lib/constants';
+import { verifyVerificationToken } from '@/lib/otp';
+import {
+  MAX_ACTIVE_BOOKINGS_PER_EMAIL,
+  underActiveBookingCap,
+} from '@/lib/bookingPolicy';
+import { computeCustomPrice, loadRateCard } from '@/lib/customPricing';
+import type { CustomResources } from '@/types/database';
 import { sendEmail } from '@/lib/email/send';
 import {
   adminNotificationEmail,
@@ -32,7 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
   }
 
-  const parsed = createBookingSchema.safeParse(body);
+  const parsed = createVerifiedBookingSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: 'validation_failed', issues: parsed.error.flatten() },
@@ -40,6 +47,17 @@ export async function POST(req: NextRequest) {
     );
   }
   const data = parsed.data;
+
+  // Email ownership proof: a token issued by /api/bookings/otp/verify,
+  // bound to this exact email, within the last 15 minutes.
+  if (
+    !verifyVerificationToken(data.verification_token, data.customer_email, [
+      'booking',
+    ])
+  ) {
+    return NextResponse.json({ error: 'email_not_verified' }, { status: 401 });
+  }
+
   const supabase = createSupabaseAdminClient();
 
   // Load availability settings + service in parallel
@@ -47,7 +65,7 @@ export async function POST(req: NextRequest) {
     supabase.from('availability_settings').select('*').maybeSingle(),
     supabase
       .from('services')
-      .select('id, name, duration_hours, is_active')
+      .select('id, name, duration_hours, is_active, is_custom')
       .eq('id', data.service_id)
       .maybeSingle(),
   ]);
@@ -127,6 +145,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'slot_taken' }, { status: 409 });
   }
 
+  // Soft cap: multiple bookings are allowed; only past N active
+  // (pending/confirmed) bookings for this email do we ask the customer to
+  // manage existing ones first. OTP + send rate limits are the real guard.
+  const { count: activeCount, error: activeErr } = await supabase
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .ilike('customer_email', data.customer_email)
+    .in('status', ['pending', 'confirmed']);
+  if (activeErr) {
+    return NextResponse.json({ error: 'lookup_failed' }, { status: 500 });
+  }
+  if (!underActiveBookingCap(activeCount ?? 0)) {
+    return NextResponse.json(
+      {
+        error: 'too_many_active_bookings',
+        limit: MAX_ACTIVE_BOOKINGS_PER_EMAIL,
+        manageUrl: '/booking-status',
+      },
+      { status: 429 },
+    );
+  }
+
+  // Custom move: persist the resource selections with an indicative price
+  // from the rate card; the customer's estimated hours drive the duration.
+  let customResources: CustomResources | null = null;
+  let durationHours = service.duration_hours;
+  if (service.is_custom) {
+    if (!data.custom_resources) {
+      return NextResponse.json({ error: 'custom_resources_required' }, { status: 400 });
+    }
+    const rateCard = await loadRateCard(supabase);
+    const price = computeCustomPrice(data.custom_resources, rateCard);
+    if (price == null) {
+      return NextResponse.json({ error: 'invalid_vehicle' }, { status: 400 });
+    }
+    customResources = {
+      ...data.custom_resources,
+      indicative_price_paise: price,
+    };
+    durationHours = data.custom_resources.hours;
+  }
+
   // Insert with retry on reference code collision (vanishingly rare but cheap)
   let reference_code = generateReferenceCode();
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -137,7 +197,7 @@ export async function POST(req: NextRequest) {
         service_id: data.service_id,
         booking_date: data.booking_date,
         booking_time: data.booking_time,
-        duration_hours: service.duration_hours,
+        duration_hours: durationHours,
         customer_name: data.customer_name,
         customer_phone: data.customer_phone,
         customer_email: data.customer_email,
@@ -149,6 +209,8 @@ export async function POST(req: NextRequest) {
         dropoff_pincode: data.dropoff_pincode,
         notes: data.notes || null,
         status: 'pending',
+        email_verified: true,
+        custom_resources: customResources,
       })
       .select('id, reference_code')
       .single();

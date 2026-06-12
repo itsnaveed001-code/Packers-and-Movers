@@ -150,6 +150,9 @@ export async function Footer() {
           </Text>
           <HStack gap={4} opacity={0.85}>
             <ChakraLink asChild _hover={{ color: 'white' }}>
+              <NextLink href="/booking-status">Track / manage booking</NextLink>
+            </ChakraLink>
+            <ChakraLink asChild _hover={{ color: 'white' }}>
               <NextLink href="/contact">Contact</NextLink>
             </ChakraLink>
             <ChakraLink asChild _hover={{ color: 'white' }}>

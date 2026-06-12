@@ -329,7 +329,13 @@ export function BookingConfirmedView() {
         </Card.Body>
       </Card.Root>
 
-      <Text mt={6} textAlign="center" fontSize="xs" color="fg.muted">
+      <Text mt={6} textAlign="center" fontSize="sm">
+        <NextLink href="/booking-status" style={{ textDecoration: 'underline' }}>
+          Track / manage your booking
+        </NextLink>
+      </Text>
+
+      <Text mt={3} textAlign="center" fontSize="xs" color="fg.muted">
         Tip: take a screenshot of this page in case you need it later.
       </Text>
     </Box>

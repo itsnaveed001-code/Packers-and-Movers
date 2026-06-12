@@ -3,6 +3,7 @@ import { Box, Container, Heading, Text } from '@chakra-ui/react';
 import { BookingFlow } from '@/components/booking/BookingFlow';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getActiveServices } from '@/lib/queries';
+import { DEFAULT_RATE_CARD, loadRateCard, type CustomRateCard } from '@/lib/customPricing';
 import { pageMetadata } from '@/lib/seo';
 
 export const metadata = pageMetadata({
@@ -51,10 +52,19 @@ async function getAvailability(): Promise<Availability> {
   }
 }
 
+async function getRateCard(): Promise<CustomRateCard> {
+  try {
+    return await loadRateCard(createSupabaseAdminClient());
+  } catch {
+    return DEFAULT_RATE_CARD;
+  }
+}
+
 export default async function BookPage() {
-  const [services, availability] = await Promise.all([
+  const [services, availability, rateCard] = await Promise.all([
     getActiveServices(),
     getAvailability(),
+    getRateCard(),
   ]);
 
   return (
@@ -90,7 +100,11 @@ export default async function BookPage() {
               </Text>
             }
           >
-            <BookingFlow services={services} availability={availability} />
+            <BookingFlow
+              services={services}
+              availability={availability}
+              rateCard={rateCard}
+            />
           </Suspense>
         )}
       </Container>

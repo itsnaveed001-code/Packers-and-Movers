@@ -170,3 +170,84 @@ export const inboxUpdateSchema = z.object({
 });
 
 export type InboxUpdateInput = z.infer<typeof inboxUpdateSchema>;
+
+// ---- Booking integrity (OTP / cancellation / custom move) -----------
+
+export const otpPurposeSchema = z.enum(['booking', 'cancel', 'manage']);
+
+const otpEmailField = z
+  .string()
+  .trim()
+  .email('Enter a valid email address')
+  .max(120)
+  .transform((v) => v.toLowerCase());
+
+export const otpSendSchema = z.object({
+  email: otpEmailField,
+  name: z.string().trim().max(60).optional().or(z.literal('')),
+  purpose: otpPurposeSchema,
+});
+
+export type OtpSendInput = z.infer<typeof otpSendSchema>;
+
+export const otpVerifySchema = z.object({
+  email: otpEmailField,
+  code: z.string().trim().regex(/^\d{6}$/, 'Code must be 6 digits'),
+  purpose: otpPurposeSchema,
+});
+
+export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
+
+// Custom-move resource selections (workers stepper 2–8, vehicle select,
+// estimated hours). Bounds mirror lib/customPricing.ts.
+export const customResourcesSchema = z.object({
+  workers: z.number().int().min(2).max(8),
+  vehicle: z.string().trim().min(1).max(40),
+  hours: z.number().int().min(2).max(12),
+});
+
+export type CustomResourcesInput = z.infer<typeof customResourcesSchema>;
+
+// Extends the original booking payload: a verified-email token is now
+// required, and custom moves carry their resource selections.
+export const createVerifiedBookingSchema = createBookingSchema.extend({
+  verification_token: z.string().min(16, 'Email verification required'),
+  custom_resources: customResourcesSchema.optional(),
+});
+
+export type CreateVerifiedBookingInput = z.infer<typeof createVerifiedBookingSchema>;
+
+// POST /api/bookings/my — either a fresh manage OTP code, a still-valid
+// manage token, or a quick read-only reference_code + email lookup.
+export const myBookingsSchema = z
+  .object({
+    email: otpEmailField,
+    code: z.string().trim().regex(/^\d{6}$/).optional(),
+    token: z.string().min(16).optional(),
+    reference_code: referenceCodeSchema.optional(),
+  })
+  .refine((v) => v.code || v.token || v.reference_code, {
+    message: 'Provide a code, token, or reference code',
+  });
+
+export type MyBookingsInput = z.infer<typeof myBookingsSchema>;
+
+// POST /api/bookings/cancel — booking_id or reference_code, plus either a
+// fresh cancel/manage OTP code or a still-valid manage token.
+export const cancelBookingSchema = z
+  .object({
+    booking_id: z.string().regex(uuidRegex).optional(),
+    reference_code: referenceCodeSchema.optional(),
+    email: otpEmailField,
+    code: z.string().trim().regex(/^\d{6}$/).optional(),
+    token: z.string().min(16).optional(),
+    reason: z.string().trim().max(300).optional().or(z.literal('')),
+  })
+  .refine((v) => v.booking_id || v.reference_code, {
+    message: 'Provide a booking id or reference code',
+  })
+  .refine((v) => v.code || v.token, {
+    message: 'Provide a verification code or token',
+  });
+
+export type CancelBookingInput = z.infer<typeof cancelBookingSchema>;
