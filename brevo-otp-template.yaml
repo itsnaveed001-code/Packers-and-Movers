@@ -1,0 +1,490 @@
+author: ""
+brandUpdateTime: '2026-06-03T19:24:59.801Z'
+campaignType: template
+fields: {}
+fieldsHistory: []
+firstLoadSocialIcons: false
+font-fallback:
+  default: Arial
+  headings: Arial
+fonts: []
+id: 164774a5-0a17-4485-9879-e098ab5d643b
+name: ""
+subject: 'Your EasyShiftX verification code'
+ui:
+  showDeleteOption: false
+user-hash: 799facd1ab77f22b0d00ebe327aabedb
+version: 3.0.1
+body:
+  id: 0c0eebee-a6b1-4b5a-9d87-937c3c95846f
+  type: body
+  layout:
+    320px:
+      width: 320px
+    default:
+      wrapper-width: 600px
+  content:
+    -
+      content-type: wrapper
+      id: 5f05cf4e-f90a-4096-b724-8113fd45cc76
+      title: Wrapper
+      type: rows
+      layout:
+        320px:
+          width: 320px
+        default:
+          align: center
+          valign: top
+      content:
+        -
+          align: top
+          dist: '12'
+          gutter: 0px
+          id: 627a3a59-5551-478b-b14a-06aab5aedbee
+          moduleName: viewInBrowser
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: section
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              width: 100%
+            default:
+              align: center
+              background-color: transparent
+              display: none
+              full-width: true
+              padding-bottom: 5px
+              padding-top: 5px
+              valign: top
+              width: 100%
+          content:
+            -
+              id: cfb3a1df-1765-4a5e-8803-6bb1263152c9
+              isEmpty: false
+              label: 'Drop content here'
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  id: ed203352-6910-4ede-a423-aa4fbd14f168
+                  title: Webversion
+                  type: text
+                  layout:
+                    320px:
+                      padding-left: 10px
+                      padding-right: 10px
+                      width: 100%
+                    default:
+                      align: center
+                      line-height: 16px
+                      padding-left: 30px
+                      padding-right: 30px
+                      text-align: center
+                      width: 100%
+                  content: "<p><a href=\"{{ mirror }}\">\n                      <span style=\"font-family: arial,helvetica,sans-serif;color:#858588;font-size: 12px; text-decoration: underline;\">\n                      View in browser</span></a></p>"
+        -
+          align: top
+          dist: '12'
+          gutter: 30px
+          id: 066c07f7-7ae5-43c2-b2aa-c1108ff4b9de
+          moduleName: header
+          thumbnail: /assets/img/editor/element-header.svg
+          title: Header
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#ffffff'
+              full-width: false
+              padding-bottom: 20px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              id: 2e15c7a8-b57a-430c-8c37-83ad989d51d1
+              isEmpty: false
+              label: 'Drop content here'
+              title: grid-column
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  id: f9028438-d3a9-4b4c-9db6-c5618537fee2
+                  label: Replace
+                  moduleName: brand-logo
+                  thumbnail: /assets/img/editor/element-logo.png
+                  title: Logo
+                  type: image
+                  layout:
+                    320px:
+                      max-width: 320px
+                      width: 100%
+                    default:
+                      align: center
+                      canvas-height: 41px
+                      dynamic: false
+                      embed: false
+                      image-maxWidth: 400px
+                      imgSize: '3042'
+                      opacity: 1
+                      valign: top
+                      width: 200px
+                  content:
+                    src: 'https://img.mailinblue.com/11368851/images/content_library/original/6a207f8a0cf7cd787695ccca.png'
+        -
+          align: top
+          dist: '12'
+          gutter: 30px
+          id: bd939928-7b75-4c99-8054-f239ee4551a5
+          moduleName: columns-article
+          thumbnail: /assets/img/editor/element-style-1.svg
+          title: Banner
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              width: 100%
+            default:
+              align: center
+              padding-bottom: 8px
+              padding-left: 0px
+              padding-right: 0px
+              padding-top: 8px
+              valign: top
+              width: 100%
+          content:
+            -
+              id: 19c84fb9-961f-489e-8700-77a70e018bec
+              isEmpty: false
+              label: 'Drop content here'
+              title: grid-column
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  id: d1cb793b-2e6e-4e7c-a7f3-4ea6568b92a1
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Headline
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      padding-top: 15px
+                      text-align: center
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<h1 class="default-heading1"><strong><span style="font-size: 26px;"><sup><span style="color: rgb(15, 23, 41); font-family: Arial, Helvetica, sans-serif;">Verify your booking</span></sup></span></strong></h1>'
+        -
+          align: top
+          dist: '12'
+          gutter: 20px
+          id: 846d5632-9e48-415b-893c-b24af4938c46
+          moduleName: grid-row12
+          thumbnail: /assets/img/editor/grid_12.svg
+          title: Text
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              width: 100%
+            default:
+              align: center
+              padding-bottom: 20px
+              padding-left: 0px
+              padding-right: 0px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              id: a3e04a03-2ae5-4ab2-8d00-c292bd3f1e2d
+              isEmpty: false
+              label: 'Drop content here'
+              title: 'column 1'
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  id: 53d690fa-4486-48cf-a7fe-b50752443067
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Intro
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 8px
+                      padding-left: 8px
+                      padding-right: 8px
+                      padding-top: 15px
+                      text-align: center
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:rgb(15,23,41);margin:0;text-align:center;">Hi {{ params.NAME }}, use the code below to confirm your move request. It keeps your slot reserved and lets our team reach you.</p>'
+                -
+                  id: 861a3b54-382c-407d-99be-c8ec56ba9714
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Code
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 16px
+                      padding-left: 8px
+                      padding-right: 8px
+                      padding-top: 16px
+                      text-align: center
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<table cellpadding="0" cellspacing="0" width="100%" style="width:100%;"><tbody><tr><td align="center" style="padding:8px 0;"><div style="display:inline-block;background:#f1f5f9;border:1px dashed #21396a;border-radius:10px;padding:18px 28px;font-family:Arial,Helvetica,sans-serif;font-size:30px;font-weight:bold;letter-spacing:8px;color:#21396a;">{{ params.OTP }}</div></td></tr></tbody></table>'
+                -
+                  id: 0b7d3c14-7a52-4f0e-9c61-2b9a4d8f1e30
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Note
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      padding-bottom: 8px
+                      padding-left: 8px
+                      padding-right: 8px
+                      padding-top: 8px
+                      text-align: center
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:rgb(15,23,41);margin:0 0 8px;text-align:center;">This code expires in <strong>{{ params.EXPIRY }} minutes</strong>. Please don''t share it with anyone.</p><p style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#64748b;margin:0;text-align:center;">Didn''t request this? You can safely ignore this email — no booking will be made.</p>'
+        -
+          align: top
+          dist: '12'
+          gutter: 30px
+          id: c9950b33-c110-497a-8dc9-dab9dfc9d57a
+          moduleName: footer
+          thumbnail: /assets/img/editor/element-footer.svg
+          title: Footer
+          type: grid-row
+          layout:
+            320px:
+              display: rows
+              padding-left: 15px
+              padding-right: 15px
+              width: 100%
+            default:
+              align: center
+              background-color: '#eff2f7'
+              full-width: false
+              padding-bottom: 20px
+              padding-left: 0px
+              padding-right: 0px
+              padding-top: 20px
+              valign: top
+              width: 100%
+          content:
+            -
+              id: 55aeee90-e1f6-45c6-b37d-1807d863eeec
+              isEmpty: false
+              label: 'Drop content here'
+              title: grid-column
+              type: grid-column
+              layout:
+                320px: []
+                default:
+                  padding-left: 0px
+                  padding-right: 0px
+                  valign: top
+              content:
+                -
+                  id: e78cf0a2-5f8d-4c13-b780-e635647ec300
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      font-size: 18px
+                      line-height: '1.5'
+                      padding-bottom: 0px
+                      padding-top: 15px
+                      text-align: center
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p><strong>Easyshiftx</strong></p>'
+                -
+                  id: 5249a485-2642-4102-874e-74b502c3a0a1
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      font-size: 18px
+                      line-height: '1.5'
+                      padding-bottom: 0px
+                      padding-top: 0px
+                      text-align: center
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p style="font-size:14px;">Banglore vinayaka layout, 560094, banglore</p>'
+                -
+                  id: 419bff3b-64cd-4574-ade0-5045835f9c55
+                  thumbnail: /assets/img/editor/element_text.svg
+                  title: Text
+                  type: text
+                  layout:
+                    320px:
+                      width: 100%
+                    default:
+                      align: left
+                      font-size: 18px
+                      line-height: '1.5'
+                      padding-bottom: 0px
+                      padding-top: 15px
+                      text-align: center
+                      text-valign: top
+                      valign: top
+                      width: 100%
+                  content: '<p style="font-size:14px;">This email was sent to {{contact.EMAIL}}</p>'
+                -
+                  id: 312d9592-58df-4684-9ecc-e391daf57465
+                  isFooter: true
+                  title: footer
+                  type: rows
+                  layout:
+                    320px:
+                      display: block
+                      width: 100%
+                    default:
+                      align: center
+                      footerImageDisplay: block
+                      padding-bottom: 15px
+                      padding-left: 0px
+                      padding-right: 0px
+                      padding-top: 0px
+                      width: 100%
+                  content:
+                    -
+                      id: 71433485-322f-497d-ac9a-0b964e080fb9
+                      isFooterImage: true
+                      label: Replace
+                      read-only: true
+                      stylable: true
+                      thumbnail: /assets/img/editor/element_image.svg
+                      title: Image
+                      type: image
+                      layout:
+                        320px:
+                          height: 48px
+                          max-width: 129px
+                          width: 129px
+                        default:
+                          align: center
+                          canvas-height: 48px
+                          display: block
+                          dynamic: false
+                          embed: false
+                          height: 48px
+                          valign: top
+                          width: 129px
+                      content:
+                        src: 'https://creative-assets.mailinblue.com/rnb-assets/en.png'
+media:
+  320px:
+    max-width: 600
+    min-width: 0
+styles:
+  default:
+    properties:
+      color: '#3b3f44'
+      font-family: Georgia
+      font-size: 16px
+      line-height: '1.5'
+    title: Paragraph
+  default-button:
+    properties:
+      background-color: '#21396a'
+      border-color: '#21396a'
+      border-radius: 4px
+      border-width: 0px
+      color: '#ffffff'
+      font-family: Georgia
+      font-size: 16px
+      remove-vml-button: optional
+      width: 50%
+    title: Button
+  default-heading1:
+    properties:
+      color: '#1F2D3D'
+      font-family: 'Arial Black'
+      font-size: 36px
+      font-weight: '400'
+    title: 'Heading 1'
+  default-heading2:
+    properties:
+      color: '#1F2D3D'
+      font-family: 'Arial Black'
+      font-size: 32px
+      font-weight: '400'
+    title: 'Heading 2'
+  default-heading3:
+    properties:
+      color: '#1F2D3D'
+      font-family: 'Arial Black'
+      font-size: 24px
+      font-weight: '400'
+    title: 'Heading 3'
+  default-heading4:
+    properties:
+      color: '#1F2D3D'
+      font-family: 'Arial Black'
+      font-size: 18px
+      font-weight: '400'
+    title: 'Heading 4'
+  default-link:
+    properties:
+      color: '#21396a'
+      text-decoration: underline
+    title: Link

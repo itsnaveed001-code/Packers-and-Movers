@@ -31,6 +31,8 @@ import {
 } from '@/lib/customPricing';
 import { formatINR, formatTimeLabel } from '@/lib/utils';
 import { recordFunnelEvent } from '@/lib/analytics';
+import { BUSINESS } from '@/lib/constants';
+import { CANCEL_MIN_HOURS_BEFORE } from '@/lib/bookingPolicy';
 
 const STEPS: Step[] = [
   { id: 1, label: 'Service' },
@@ -46,6 +48,60 @@ type AvailabilityConfig = {
   advanceBookingDays: number;
 };
 
+/** Razorpay deposit config, resolved server-side in app/(marketing)/book/page.tsx. */
+export type PaymentsConfig = {
+  enabled: boolean;
+  keyId: string | null;
+  depositInr: number;
+};
+
+const PAYMENTS_DISABLED: PaymentsConfig = {
+  enabled: false,
+  keyId: null,
+  depositInr: 0,
+};
+
+// ---- Razorpay Checkout (drop-in) --------------------------------------
+type RazorpayCheckoutResponse = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayInstance = {
+  open: () => void;
+  on: (event: 'payment.failed', cb: (resp: unknown) => void) => void;
+};
+
+type RazorpayConstructor = new (options: Record<string, unknown>) => RazorpayInstance;
+
+declare global {
+  interface Window {
+    Razorpay?: RazorpayConstructor;
+  }
+}
+
+let razorpayScriptPromise: Promise<boolean> | null = null;
+
+/** Injects checkout.js once; resolves false when the script can't load. */
+function loadRazorpayScript(): Promise<boolean> {
+  if (typeof window === 'undefined') return Promise.resolve(false);
+  if (window.Razorpay) return Promise.resolve(true);
+  if (razorpayScriptPromise) return razorpayScriptPromise;
+  razorpayScriptPromise = new Promise<boolean>((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(Boolean(window.Razorpay));
+    script.onerror = () => {
+      razorpayScriptPromise = null; // allow a retry on the next attempt
+      resolve(false);
+    };
+    document.body.appendChild(script);
+  });
+  return razorpayScriptPromise;
+}
+
 function isoDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -54,10 +110,12 @@ export function BookingFlow({
   services,
   availability,
   rateCard = DEFAULT_RATE_CARD,
+  payments = PAYMENTS_DISABLED,
 }: {
   services: Service[];
   availability: AvailabilityConfig;
   rateCard?: CustomRateCard;
+  payments?: PaymentsConfig;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -140,6 +198,199 @@ export function BookingFlow({
     next();
   }
 
+  function buildBookingPayload() {
+    return {
+      service_id: serviceId,
+      booking_date: isoSelectedDate,
+      booking_time: time,
+      ...customer,
+      verification_token: verificationToken,
+      ...(isCustomService ? { custom_resources: customSelection } : {}),
+    };
+  }
+
+  function goToConfirmation(referenceCode: string) {
+    recordFunnelEvent({
+      event_type: 'booking_submitted',
+      service_slug: selectedService?.slug ?? null,
+      payload: { reference_code: referenceCode },
+    });
+    router.push(`/booking-confirmed?ref=${encodeURIComponent(referenceCode)}`);
+  }
+
+  /** Shared 4xx handling for POST /api/bookings and /api/payments/order. */
+  function showBookingError(status: number, body: { error?: string }) {
+    if (status === 409) {
+      setTime(null);
+      setStep(3);
+      toaster.create({
+        type: 'error',
+        title: 'That slot was just taken',
+        description: 'Please pick a different time.',
+      });
+      return;
+    }
+    if (status === 429 && body.error === 'too_many_active_bookings') {
+      toaster.create({
+        type: 'error',
+        title: 'You already have several upcoming bookings',
+        description:
+          'To keep things fair we pause new bookings past 5 active ones. Manage or cancel an existing booking on the Track & manage page.',
+        duration: 9000,
+      });
+      return;
+    }
+    if (status === 401) {
+      setVerificationToken(null);
+      toaster.create({
+        type: 'error',
+        title: 'Email verification expired',
+        description: 'Please verify your email again and re-confirm.',
+      });
+      return;
+    }
+    toaster.create({
+      type: 'error',
+      title: "Couldn't complete booking",
+      description: body.error
+        ? `Reason: ${body.error.replace(/_/g, ' ')}`
+        : 'Please try again in a moment.',
+    });
+  }
+
+  async function directBooking() {
+    const res = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildBookingPayload()),
+    });
+
+    if (res.status === 201) {
+      const body = (await res.json()) as { reference_code: string };
+      goToConfirmation(body.reference_code);
+      return true; // navigating away — keep the button in its loading state
+    }
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    showBookingError(res.status, body);
+    return false;
+  }
+
+  /**
+   * Paid flow: create the deposit order, open Razorpay Checkout, then
+   * verify the signature server-side. The booking exists only after
+   * verification (or the payment.captured webhook) succeeds. Dismissing
+   * or failing the payment books nothing; the email verification stays
+   * valid for 15 minutes so retrying skips the OTP.
+   */
+  async function payAndBook(): Promise<boolean> {
+    const res = await fetch('/api/payments/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildBookingPayload()),
+    });
+    const orderBody = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      order_id?: string;
+      amount_paise?: number;
+      currency?: string;
+      key_id?: string;
+      deposit_inr?: number;
+    };
+    if (res.status !== 201 || !orderBody.order_id || !orderBody.key_id) {
+      showBookingError(res.status, orderBody);
+      return false;
+    }
+
+    if (!(await loadRazorpayScript()) || !window.Razorpay) {
+      toaster.create({
+        type: 'error',
+        title: "Couldn't load the payment window",
+        description:
+          'Please check your connection (or ad blocker) and try again.',
+      });
+      return false;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      const rzp = new window.Razorpay!({
+        key: orderBody.key_id,
+        order_id: orderBody.order_id,
+        amount: orderBody.amount_paise,
+        currency: orderBody.currency ?? 'INR',
+        name: BUSINESS.name,
+        description: `Refundable booking deposit (₹${orderBody.deposit_inr ?? payments.depositInr})`,
+        prefill: {
+          name: customer!.customer_name,
+          email: customer!.customer_email,
+          contact: customer!.customer_phone,
+        },
+        notes: { booking_date: isoSelectedDate },
+        theme: { color: '#21396a' },
+        modal: {
+          ondismiss: () => {
+            toaster.create({
+              type: 'info',
+              title: 'Payment cancelled — nothing was booked',
+              description:
+                'Your slot is not reserved yet. You can pay again within 15 minutes without re-verifying your email.',
+              duration: 8000,
+            });
+            resolve(false);
+          },
+        },
+        handler: async (response: RazorpayCheckoutResponse) => {
+          try {
+            const verifyRes = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(response),
+            });
+            const verifyBody = (await verifyRes.json().catch(() => ({}))) as {
+              ok?: boolean;
+              reference_code?: string;
+            };
+            if (verifyRes.ok && verifyBody.ok && verifyBody.reference_code) {
+              goToConfirmation(verifyBody.reference_code);
+              resolve(true);
+              return;
+            }
+            // Payment went through but our confirm call didn't. The
+            // payment.captured webhook will still create the booking.
+            toaster.create({
+              type: 'warning',
+              title: 'Payment received — confirming your booking',
+              description:
+                'We could not confirm instantly, but your booking will appear under Track & manage within a few minutes. Your deposit is safe.',
+              duration: 12000,
+            });
+            router.push('/booking-status');
+            resolve(true);
+          } catch {
+            toaster.create({
+              type: 'warning',
+              title: 'Payment received — confirming your booking',
+              description:
+                'Network hiccup while confirming. Your deposit is safe and the booking will appear under Track & manage shortly.',
+              duration: 12000,
+            });
+            router.push('/booking-status');
+            resolve(true);
+          }
+        },
+      });
+      rzp.on('payment.failed', () => {
+        // Razorpay keeps its modal open and offers a retry on the same
+        // order; we just surface what happened.
+        toaster.create({
+          type: 'error',
+          title: 'Payment failed',
+          description: 'No money was taken for this attempt. You can retry from the payment window.',
+        });
+      });
+      rzp.open();
+    });
+  }
+
   async function confirmBooking() {
     if (!serviceId || !isoSelectedDate || !time || !customer) return;
     if (!verificationToken) {
@@ -152,79 +403,17 @@ export function BookingFlow({
     }
     setSubmitting(true);
     try {
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id: serviceId,
-          booking_date: isoSelectedDate,
-          booking_time: time,
-          ...customer,
-          verification_token: verificationToken,
-          ...(isCustomService ? { custom_resources: customSelection } : {}),
-        }),
-      });
-
-      if (res.status === 201) {
-        const body = (await res.json()) as { reference_code: string };
-        recordFunnelEvent({
-          event_type: 'booking_submitted',
-          service_slug: selectedService?.slug ?? null,
-          payload: { reference_code: body.reference_code },
-        });
-        router.push(`/booking-confirmed?ref=${encodeURIComponent(body.reference_code)}`);
-        return;
-      }
-
-      if (res.status === 409) {
-        setTime(null);
-        setStep(3);
-        toaster.create({
-          type: 'error',
-          title: 'That slot was just taken',
-          description: 'Please pick a different time.',
-        });
-        return;
-      }
-
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-
-      if (res.status === 429 && body.error === 'too_many_active_bookings') {
-        toaster.create({
-          type: 'error',
-          title: 'You already have several upcoming bookings',
-          description:
-            'To keep things fair we pause new bookings past 5 active ones. Manage or cancel an existing booking on the Track & manage page.',
-          duration: 9000,
-        });
-        return;
-      }
-
-      if (res.status === 401) {
-        setVerificationToken(null);
-        toaster.create({
-          type: 'error',
-          title: 'Email verification expired',
-          description: 'Please verify your email again and re-confirm.',
-        });
-        return;
-      }
-      toaster.create({
-        type: 'error',
-        title: "Couldn't complete booking",
-        description: body.error
-          ? `Reason: ${body.error.replace(/_/g, ' ')}`
-          : 'Please try again in a moment.',
-      });
+      const usePayments = payments.enabled && Boolean(payments.keyId);
+      const navigating = usePayments ? await payAndBook() : await directBooking();
+      if (navigating) return; // router.push in flight — keep the spinner
     } catch {
       toaster.create({
         type: 'error',
         title: 'Network error',
         description: 'Please check your connection and try again.',
       });
-    } finally {
-      setSubmitting(false);
     }
+    setSubmitting(false);
   }
 
   return (
@@ -327,6 +516,7 @@ export function BookingFlow({
                 onBack={back}
                 onConfirm={confirmBooking}
                 submitting={submitting}
+                payments={payments}
               />
             )}
           </Stack>
@@ -348,6 +538,7 @@ function ReviewStep({
   onBack,
   onConfirm,
   submitting,
+  payments,
 }: {
   service: Service;
   date: Date;
@@ -360,6 +551,7 @@ function ReviewStep({
   onBack: () => void;
   onConfirm: () => void;
   submitting: boolean;
+  payments: PaymentsConfig;
 }) {
   const customPrice = customSelection
     ? computeCustomPrice(customSelection, rateCard)
@@ -446,14 +638,27 @@ function ReviewStep({
         onVerified={onVerified}
       />
 
-      <Box rounded="md" bg="brand.50" px={3} py={2} fontSize="xs" color="brand.900">
-        No payment is needed now. We&apos;ll call you within 2 hours to confirm the price and your booking.
-        {' '}You can track or cancel any booking later from the{' '}
-        <NextLink href="/booking-status" style={{ textDecoration: 'underline' }}>
-          Track &amp; manage page
-        </NextLink>
-        .
-      </Box>
+      {payments.enabled ? (
+        <Box rounded="md" bg="brand.50" px={3} py={2} fontSize="xs" color="brand.900">
+          A refundable deposit of <b>₹{payments.depositInr}</b> confirms your booking
+          instantly — it&apos;s returned in full if you cancel at least{' '}
+          {CANCEL_MIN_HOURS_BEFORE} hours before your slot. The remaining amount is
+          payable on the day of service. Track or cancel any booking from the{' '}
+          <NextLink href="/booking-status" style={{ textDecoration: 'underline' }}>
+            Track &amp; manage page
+          </NextLink>
+          .
+        </Box>
+      ) : (
+        <Box rounded="md" bg="brand.50" px={3} py={2} fontSize="xs" color="brand.900">
+          No payment is needed now. We&apos;ll call you within 2 hours to confirm the price and your booking.
+          {' '}You can track or cancel any booking later from the{' '}
+          <NextLink href="/booking-status" style={{ textDecoration: 'underline' }}>
+            Track &amp; manage page
+          </NextLink>
+          .
+        </Box>
+      )}
 
       <Flex direction={{ base: 'column', sm: 'row' }} justify="space-between" gap={2}>
         <Button variant="outline" onClick={onBack} disabled={submitting}>
@@ -462,13 +667,15 @@ function ReviewStep({
         <Button
           onClick={onConfirm}
           loading={submitting}
-          loadingText="Confirming…"
+          loadingText={payments.enabled ? 'Opening payment…' : 'Confirming…'}
           colorPalette="brand"
           size="lg"
           disabled={!emailVerified}
           title={emailVerified ? undefined : 'Verify your email to enable'}
         >
-          Confirm booking
+          {payments.enabled
+            ? `Pay ₹${payments.depositInr} deposit & confirm`
+            : 'Confirm booking'}
         </Button>
       </Flex>
     </Stack>

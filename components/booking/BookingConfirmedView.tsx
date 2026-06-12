@@ -10,6 +10,7 @@ import {
   Copy,
   Download,
   CalendarPlus,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   Box,
@@ -36,6 +37,8 @@ type LookupBody = {
   customer_first_name: string;
   pickup_city: string;
   dropoff_city: string;
+  deposit_amount_inr?: number | null;
+  payment_status?: string | null;
   service: { name: string; slug: string } | null;
 };
 
@@ -103,6 +106,7 @@ export function BookingConfirmedView() {
       doc.text(`Reference: ${ref}`, left, y);
 
       const d = state.kind === 'ok' ? state.data : null;
+      const depositPaid = d?.payment_status === 'paid';
       const rows: [string, string][] = [
         ['Service', d?.service?.name ?? '—'],
         [
@@ -119,6 +123,14 @@ export function BookingConfirmedView() {
         ['Time', d ? formatTimeLabel(d.booking_time) : '—'],
         ['Route', d ? `${d.pickup_city} to ${d.dropoff_city}` : '—'],
         ['Status', d ? STATUS_LABELS[d.status] : 'Pending'],
+        ...(depositPaid
+          ? ([
+              [
+                'Deposit',
+                `Rs. ${d?.deposit_amount_inr ?? ''} paid online (refundable >= 12 h before slot)`,
+              ],
+            ] as [string, string][])
+          : []),
       ];
 
       doc.setFont('helvetica', 'normal');
@@ -134,7 +146,13 @@ export function BookingConfirmedView() {
       y += 44;
       doc.setFontSize(10);
       doc.setTextColor(100, 116, 139);
-      doc.text('No payment was taken online — pay on the day of service.', left, y);
+      doc.text(
+        depositPaid
+          ? 'Deposit paid online; the remaining amount is payable on the day of service.'
+          : 'No payment was taken online — pay on the day of service.',
+        left,
+        y,
+      );
       y += 16;
       doc.text(`Questions? Call ${BUSINESS.phone} or message us on WhatsApp.`, left, y);
 
@@ -245,6 +263,30 @@ export function BookingConfirmedView() {
               <Text as="strong">What happens next:</Text> Our team will call you within 2
               hours to confirm your booking and walk through the details.
             </Box>
+
+            {state.kind === 'ok' && state.data.payment_status === 'paid' && (
+              <Flex
+                align="center"
+                gap={2}
+                rounded="md"
+                borderWidth="1px"
+                borderColor="green.200"
+                bg="green.50"
+                px={4}
+                py={3}
+                fontSize="sm"
+                color="green.900"
+              >
+                <ShieldCheck size={18} />
+                <Text>
+                  <Text as="strong">
+                    Deposit paid: ₹{state.data.deposit_amount_inr ?? ''}
+                  </Text>{' '}
+                  — fully refundable if you cancel at least 12 hours before your
+                  slot.
+                </Text>
+              </Flex>
+            )}
 
             <Button onClick={downloadReceipt} variant="outline" width="full">
               <Download size={16} /> Download receipt (PDF)
