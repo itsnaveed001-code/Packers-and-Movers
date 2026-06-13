@@ -56,6 +56,14 @@ import {
   verifyWebhookSignature,
 } from '../lib/razorpay';
 import { isCrossOriginForbidden, isCsrfExempt } from '../lib/apiGuard';
+import {
+  computeInvoiceTotalPaise,
+  generateInvoiceToken,
+} from '../lib/invoicesServer';
+import {
+  createInvoiceSchema,
+  invoiceTokenSchema,
+} from '../lib/validation';
 
 let passed = 0;
 let failed = 0;
@@ -445,6 +453,60 @@ check(
     requestHost: HOST,
     hostHeader: HOST,
   }),
+);
+
+console.log('--- Invoice token (unguessable, fixed shape) ---');
+const t1 = generateInvoiceToken();
+const t2 = generateInvoiceToken();
+check('token is 64 hex chars (32 random bytes)', /^[a-f0-9]{64}$/.test(t1));
+check('two tokens never collide', t1 !== t2);
+check('schema accepts valid token', invoiceTokenSchema.safeParse(t1).success);
+check(
+  'schema rejects short token (no /invoice/abc DoS lookup)',
+  !invoiceTokenSchema.safeParse('abc').success,
+);
+check(
+  'schema rejects uppercase / non-hex chars',
+  !invoiceTokenSchema.safeParse('A'.repeat(64)).success,
+);
+
+console.log('--- Invoice total (server-derived, always paise) ---');
+check(
+  'empty line items → ₹0 → 0 paise',
+  computeInvoiceTotalPaise([]) === 0,
+);
+check(
+  'sum is rupees × 100 across rows (no float math)',
+  computeInvoiceTotalPaise([
+    { description: 'Truck', amount_inr: 4500 },
+    { description: 'Crew', amount_inr: 1200 },
+    { description: 'Materials', amount_inr: 300 },
+  ]) === 600_000,
+);
+
+console.log('--- Invoice schema (rejects bad input) ---');
+check(
+  'rejects empty line_items',
+  !createInvoiceSchema.safeParse({ line_items: [], notes: '' }).success,
+);
+check(
+  'rejects negative amounts',
+  !createInvoiceSchema.safeParse({
+    line_items: [{ description: 'X', amount_inr: -1 }],
+  }).success,
+);
+check(
+  'rejects amount over ₹50,00,000 cap',
+  !createInvoiceSchema.safeParse({
+    line_items: [{ description: 'X', amount_inr: 5_000_001 }],
+  }).success,
+);
+check(
+  'accepts a valid invoice',
+  createInvoiceSchema.safeParse({
+    line_items: [{ description: 'Final move charge', amount_inr: 6500 }],
+    notes: 'Includes packing materials.',
+  }).success,
 );
 
 console.log('---');
