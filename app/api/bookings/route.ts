@@ -87,6 +87,7 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get('status');
   const from = searchParams.get('from');
   const to = searchParams.get('to');
+  const invoiceStatusParam = searchParams.get('invoice_status');
 
   const validStatuses = new Set([
     'pending',
@@ -96,6 +97,19 @@ export async function GET(req: NextRequest) {
     'cancelled',
   ] as const);
   type BookingStatusValue = typeof validStatuses extends Set<infer T> ? T : never;
+
+  const validInvoiceStatuses = new Set([
+    'none',
+    'sent',
+    'paid',
+    'cash_received',
+  ] as const);
+  type InvoiceStatusFilter = typeof validInvoiceStatuses extends Set<infer T> ? T : never;
+  const invoiceStatusFilter =
+    invoiceStatusParam &&
+    validInvoiceStatuses.has(invoiceStatusParam as InvoiceStatusFilter)
+      ? (invoiceStatusParam as InvoiceStatusFilter)
+      : null;
 
   const supabase = createSupabaseAdminClient();
   let query = supabase
@@ -115,5 +129,47 @@ export async function GET(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: 'fetch_failed' }, { status: 500 });
   }
-  return NextResponse.json({ bookings: data ?? [] });
+
+  // Stitch the latest active invoice onto each booking. The partial
+  // unique index `invoices_one_per_booking` guarantees at most one
+  // sent/paid/cash_received invoice per booking, so a single batch
+  // lookup keyed on booking_id is enough.
+  const bookings = data ?? [];
+  const bookingIds = bookings.map((b) => b.id);
+  let invoiceByBookingId = new Map<
+    string,
+    { status: string; amount_paise: number }
+  >();
+  if (bookingIds.length > 0) {
+    const { data: invoiceRows } = await supabase
+      .from('invoices')
+      .select('booking_id, status, amount_paise')
+      .in('booking_id', bookingIds)
+      .in('status', ['sent', 'paid', 'cash_received']);
+    invoiceByBookingId = new Map(
+      (invoiceRows ?? []).map((row) => [
+        row.booking_id,
+        { status: row.status, amount_paise: row.amount_paise },
+      ]),
+    );
+  }
+
+  const enriched = bookings.map((b) => {
+    const inv = invoiceByBookingId.get(b.id);
+    return {
+      ...b,
+      invoice_status: inv?.status ?? null,
+      invoice_amount_paise: inv?.amount_paise ?? null,
+    };
+  });
+
+  const filtered = invoiceStatusFilter
+    ? enriched.filter((b) =>
+        invoiceStatusFilter === 'none'
+          ? b.invoice_status == null
+          : b.invoice_status === invoiceStatusFilter,
+      )
+    : enriched;
+
+  return NextResponse.json({ bookings: filtered });
 }

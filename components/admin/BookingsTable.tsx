@@ -38,12 +38,56 @@ type BookingRow = {
   pickup_city: string;
   dropoff_city: string;
   service: { name: string; slug: string } | null;
+  payment_status: string | null;
+  invoice_status: string | null;
 };
+
+const INVOICE_FILTERS: { value: string; label: string }[] = [
+  { value: 'all', label: 'All invoices' },
+  { value: 'none', label: 'No invoice' },
+  { value: 'sent', label: 'Invoice sent' },
+  { value: 'paid', label: 'Invoice paid' },
+  { value: 'cash_received', label: 'Cash received' },
+];
+
+function PaymentChips({ row }: { row: BookingRow }) {
+  const chips: { label: string; className: string }[] = [];
+  if (row.payment_status === 'paid') {
+    chips.push({ label: 'Deposit', className: 'bg-emerald-100 text-emerald-800' });
+  } else if (row.payment_status === 'refunded') {
+    chips.push({ label: 'Refunded', className: 'bg-slate-100 text-slate-700' });
+  } else if (row.payment_status === 'refund_failed') {
+    chips.push({ label: 'Refund failed', className: 'bg-amber-100 text-amber-800' });
+  }
+  if (row.invoice_status === 'sent') {
+    chips.push({ label: 'Inv sent', className: 'bg-amber-100 text-amber-800' });
+  } else if (row.invoice_status === 'paid') {
+    chips.push({ label: 'Inv paid', className: 'bg-emerald-100 text-emerald-800' });
+  } else if (row.invoice_status === 'cash_received') {
+    chips.push({ label: 'Cash', className: 'bg-blue-100 text-blue-800' });
+  }
+  if (chips.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {chips.map((chip) => (
+        <span
+          key={chip.label}
+          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${chip.className}`}
+        >
+          {chip.label}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'upcoming' | 'all' }) {
   const { show } = useToast();
   const [rows, setRows] = React.useState<BookingRow[] | null>(null);
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
+  const [invoiceFilter, setInvoiceFilter] = React.useState<string>('all');
   const [search, setSearch] = React.useState('');
   const [refreshTick, setRefreshTick] = React.useState(0);
   const filter = initialFilter ?? 'all';
@@ -53,6 +97,7 @@ export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'up
     setRows(null);
     const params = new URLSearchParams();
     if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (invoiceFilter !== 'all') params.set('invoice_status', invoiceFilter);
     const today = new Date().toISOString().slice(0, 10);
     if (filter === 'today') {
       params.set('from', today);
@@ -75,7 +120,7 @@ export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'up
     return () => {
       cancelled = true;
     };
-  }, [statusFilter, filter, refreshTick]);
+  }, [statusFilter, invoiceFilter, filter, refreshTick]);
 
   // Realtime: poke the dashboard when a new booking lands so the owner sees
   // it without reloading. Requires Realtime to be enabled for `bookings` in
@@ -145,6 +190,18 @@ export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'up
             ))}
           </SelectContent>
         </Select>
+        <Select value={invoiceFilter} onValueChange={setInvoiceFilter}>
+          <SelectTrigger className="sm:w-44">
+            <SelectValue placeholder="All invoices" />
+          </SelectTrigger>
+          <SelectContent>
+            {INVOICE_FILTERS.map((f) => (
+              <SelectItem key={f.value} value={f.value}>
+                {f.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-white">
@@ -157,6 +214,7 @@ export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'up
               <TableHead>Service</TableHead>
               <TableHead>Route</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Payment</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -165,7 +223,7 @@ export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'up
               <>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={8}>
                       <Skeleton className="h-5 w-full" />
                     </TableCell>
                   </TableRow>
@@ -174,7 +232,7 @@ export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'up
             )}
             {filtered?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
                   No bookings match these filters.
                 </TableCell>
               </TableRow>
@@ -202,6 +260,9 @@ export function BookingsTable({ initialFilter }: { initialFilter?: 'today' | 'up
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={row.status} />
+                </TableCell>
+                <TableCell>
+                  <PaymentChips row={row} />
                 </TableCell>
                 <TableCell>
                   <Link

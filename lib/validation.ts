@@ -267,6 +267,35 @@ export const myBookingsSchema = z
 
 export type MyBookingsInput = z.infer<typeof myBookingsSchema>;
 
+// ---- Invoices --------------------------------------------------------
+
+// One row of an invoice. Description is admin free text; amount is whole
+// rupees (the form caps at ₹50L per line, matching final_price). The
+// server multiplies × 100 to get paise — no float math anywhere.
+export const invoiceLineItemSchema = z.object({
+  description: z.string().trim().min(1, 'Description required').max(120),
+  amount_inr: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(5_000_000),
+});
+
+// POST /api/admin/bookings/[id]/invoice
+export const createInvoiceSchema = z.object({
+  line_items: z.array(invoiceLineItemSchema).min(1, 'Add at least one line item').max(20),
+  notes: z.string().trim().max(1000).optional().or(z.literal('')),
+});
+
+export type CreateInvoiceInput = z.infer<typeof createInvoiceSchema>;
+
+// 32 random bytes → 64 hex characters. Reject anything else early so
+// /invoice/<garbage> 404s without touching the DB.
+export const invoiceTokenSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-f0-9]{64}$/, 'Invalid invoice token');
+
 // POST /api/bookings/cancel — booking_id or reference_code, plus either a
 // fresh cancel/manage OTP code or a still-valid manage token.
 export const cancelBookingSchema = z

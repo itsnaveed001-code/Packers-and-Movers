@@ -44,8 +44,7 @@ import {
 import { createHmac } from 'node:crypto';
 import {
   capturedEventOutcome,
-  DEPOSIT_AMOUNT_INR,
-  depositAmountPaise,
+  DEPOSIT_AMOUNT_PAISE_FALLBACK,
   failedEventOutcome,
   REFUND_ON_CANCEL,
   shouldRefundOnCancel,
@@ -57,6 +56,14 @@ import {
   verifyWebhookSignature,
 } from '../lib/razorpay';
 import { isCrossOriginForbidden, isCsrfExempt } from '../lib/apiGuard';
+import {
+  computeInvoiceTotalPaise,
+  generateInvoiceToken,
+} from '../lib/invoicesServer';
+import {
+  createInvoiceSchema,
+  invoiceTokenSchema,
+} from '../lib/validation';
 
 let passed = 0;
 let failed = 0;
@@ -258,12 +265,14 @@ check(
   availableCount(slotRows, '09:00', 2) === 1,
 );
 
-console.log('--- Deposit amount (server-derived) ---');
-check('deposit policy is ₹299', DEPOSIT_AMOUNT_INR === 299);
+console.log('--- Deposit amount (server-derived, DB-backed) ---');
 check(
-  'order amount = ₹299 → 29900 paise (never client-supplied)',
-  depositAmountPaise() === 29_900 &&
-    depositAmountPaise() === DEPOSIT_AMOUNT_INR * 100,
+  'deposit fallback is ₹299 (paise) when app_settings row is missing',
+  DEPOSIT_AMOUNT_PAISE_FALLBACK === 29_900,
+);
+check(
+  'fallback is always integer paise (no float math)',
+  Number.isInteger(DEPOSIT_AMOUNT_PAISE_FALLBACK),
 );
 
 console.log('--- Razorpay signature verification ---');
@@ -444,6 +453,60 @@ check(
     requestHost: HOST,
     hostHeader: HOST,
   }),
+);
+
+console.log('--- Invoice token (unguessable, fixed shape) ---');
+const t1 = generateInvoiceToken();
+const t2 = generateInvoiceToken();
+check('token is 64 hex chars (32 random bytes)', /^[a-f0-9]{64}$/.test(t1));
+check('two tokens never collide', t1 !== t2);
+check('schema accepts valid token', invoiceTokenSchema.safeParse(t1).success);
+check(
+  'schema rejects short token (no /invoice/abc DoS lookup)',
+  !invoiceTokenSchema.safeParse('abc').success,
+);
+check(
+  'schema rejects uppercase / non-hex chars',
+  !invoiceTokenSchema.safeParse('A'.repeat(64)).success,
+);
+
+console.log('--- Invoice total (server-derived, always paise) ---');
+check(
+  'empty line items → ₹0 → 0 paise',
+  computeInvoiceTotalPaise([]) === 0,
+);
+check(
+  'sum is rupees × 100 across rows (no float math)',
+  computeInvoiceTotalPaise([
+    { description: 'Truck', amount_inr: 4500 },
+    { description: 'Crew', amount_inr: 1200 },
+    { description: 'Materials', amount_inr: 300 },
+  ]) === 600_000,
+);
+
+console.log('--- Invoice schema (rejects bad input) ---');
+check(
+  'rejects empty line_items',
+  !createInvoiceSchema.safeParse({ line_items: [], notes: '' }).success,
+);
+check(
+  'rejects negative amounts',
+  !createInvoiceSchema.safeParse({
+    line_items: [{ description: 'X', amount_inr: -1 }],
+  }).success,
+);
+check(
+  'rejects amount over ₹50,00,000 cap',
+  !createInvoiceSchema.safeParse({
+    line_items: [{ description: 'X', amount_inr: 5_000_001 }],
+  }).success,
+);
+check(
+  'accepts a valid invoice',
+  createInvoiceSchema.safeParse({
+    line_items: [{ description: 'Final move charge', amount_inr: 6500 }],
+    notes: 'Includes packing materials.',
+  }).success,
 );
 
 console.log('---');

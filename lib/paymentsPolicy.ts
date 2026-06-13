@@ -5,19 +5,16 @@
 
 import type { PaymentStatus } from '@/types/database';
 
-/** Refundable deposit collected at booking time, in rupees. */
-export const DEPOSIT_AMOUNT_INR = 299;
+/**
+ * Fallback deposit amount, in paise, used only when the live value in
+ * `app_settings` is missing or malformed. Admin-edited via /admin/settings.
+ * Kept here (not in lib/appSettings.ts) so this file stays env- and
+ * DB-free and the wizard's client bundle can import it.
+ */
+export const DEPOSIT_AMOUNT_PAISE_FALLBACK = 29900;
 
 /** Cancelling inside the allowed window (≥12 h) refunds the deposit in full. */
 export const REFUND_ON_CANCEL = true;
-
-/**
- * Amount sent to Razorpay, in paise. Always derived server-side from the
- * policy constant — client-supplied amounts are never trusted.
- */
-export function depositAmountPaise(): number {
-  return DEPOSIT_AMOUNT_INR * 100;
-}
 
 /**
  * Should cancellation trigger a Razorpay refund? Only when the policy is

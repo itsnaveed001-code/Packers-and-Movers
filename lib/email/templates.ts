@@ -263,6 +263,110 @@ export function customerCancellationEmail(data: {
   return { subject, html: shell(inner) };
 }
 
+export type InvoiceEmailData = {
+  reference_code: string;
+  service_name: string | null;
+  booking_date: string; // YYYY-MM-DD
+  booking_time: string; // HH:MM
+  customer_name: string;
+  /** Line items the admin entered, in rupees. */
+  line_items: { description: string; amount_inr: number }[];
+  /** Total in paise — authoritative; UI formats as ₹X. */
+  amount_paise: number;
+  notes: string | null;
+  pay_url: string;
+};
+
+function formatRupeesFromPaise(paise: number): string {
+  // Whole rupees with thousands separator. No decimal (admin enters
+  // whole-rupee amounts; line totals are integer × 100).
+  return Math.round(paise / 100).toLocaleString('en-IN');
+}
+
+/**
+ * Variables for the Brevo "invoice" template. Keys map to {{ params.KEY }}
+ * tokens — keep in sync with the hosted template. LINE_ITEMS is a single
+ * pre-formatted HTML string to keep the template logic simple.
+ */
+export function invoiceTemplateParams(data: InvoiceEmailData): Record<string, string> {
+  const itemsHtml = data.line_items
+    .map(
+      (item) =>
+        `<tr><td style="padding:6px 0;font-size:14px;">${item.description}</td><td style="padding:6px 0;font-size:14px;text-align:right;">₹${item.amount_inr.toLocaleString('en-IN')}</td></tr>`,
+    )
+    .join('');
+  return {
+    REFERENCE: data.reference_code,
+    SERVICE: data.service_name ?? '—',
+    DATE: formatDate(data.booking_date),
+    TIME: formatTimeLabel(data.booking_time),
+    CUSTOMER_NAME: data.customer_name,
+    TOTAL: `₹${formatRupeesFromPaise(data.amount_paise)}`,
+    LINE_ITEMS_HTML: itemsHtml,
+    NOTES: data.notes && data.notes.trim() ? data.notes : '',
+    PAY_URL: data.pay_url,
+  };
+}
+
+/**
+ * Inline HTML fallback when BREVO_INVOICE_TEMPLATE_ID is unset. Same
+ * shape as the booking confirmation email — line items table, total,
+ * prominent Pay Now button. Resend always uses this (no template mode).
+ */
+export function invoiceEmail(data: InvoiceEmailData): { subject: string; html: string } {
+  const firstName = data.customer_name?.trim() ? data.customer_name.split(' ')[0] : 'there';
+  const subject = `Invoice for your move — ${data.reference_code}`;
+  const itemsRows = data.line_items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;font-size:14px;color:${TEXT};">${item.description}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #e2e8f0;font-size:14px;color:${TEXT};text-align:right;white-space:nowrap;">₹${item.amount_inr.toLocaleString('en-IN')}</td>
+        </tr>`,
+    )
+    .join('');
+  const inner = `
+    <h2 style="margin:0 0 6px;font-size:18px;color:${TEXT};">Hi ${firstName},</h2>
+    <p style="margin:0 0 16px;color:${MUTED};font-size:14px;">
+      Here's the invoice for your move (reference
+      <strong style="color:${TEXT};">${data.reference_code}</strong>).
+    </p>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 12px;border-top:1px solid #e2e8f0;">
+      ${row('Service', data.service_name ?? '—')}
+      ${row('Date', formatDate(data.booking_date))}
+      ${row('Time', formatTimeLabel(data.booking_time))}
+    </table>
+
+    <h3 style="margin:18px 0 8px;font-size:14px;color:${TEXT};text-transform:uppercase;letter-spacing:0.04em;">Items</h3>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #e2e8f0;">
+      ${itemsRows}
+      <tr>
+        <td style="padding:12px 0 0;font-size:15px;color:${TEXT};font-weight:600;">Total</td>
+        <td style="padding:12px 0 0;font-size:18px;color:${BRAND};font-weight:700;text-align:right;">₹${formatRupeesFromPaise(data.amount_paise)}</td>
+      </tr>
+    </table>
+
+    ${
+      data.notes && data.notes.trim()
+        ? `<div style="margin:18px 0 0;background:${BG};border-radius:10px;padding:12px 14px;font-size:14px;color:${TEXT};white-space:pre-wrap;">${data.notes}</div>`
+        : ''
+    }
+
+    <p style="margin:24px 0 0;text-align:center;">
+      <a href="${data.pay_url}" style="display:inline-block;background:${BRAND};color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Pay ₹${formatRupeesFromPaise(data.amount_paise)} now</a>
+    </p>
+    <p style="margin:14px 0 0;color:${MUTED};font-size:12px;text-align:center;">
+      Or open this link in your browser:<br/>
+      <a href="${data.pay_url}" style="color:${BRAND};word-break:break-all;">${data.pay_url}</a>
+    </p>
+    <p style="margin:18px 0 0;color:${MUTED};font-size:13px;">
+      Questions? Just reply to this email or call ${BUSINESS.phone}.
+    </p>
+  `;
+  return { subject, html: shell(inner) };
+}
+
 export function contactFormEmail(data: {
   name: string;
   email: string;

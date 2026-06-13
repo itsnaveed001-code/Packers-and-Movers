@@ -44,6 +44,15 @@ export type ContentBlockPage = 'home' | 'about' | 'contact' | 'global';
 
 export type OtpPurpose = 'booking' | 'cancel' | 'manage';
 
+/** Invoice lifecycle. cash_received is the offline-payment manual override. */
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cash_received';
+
+/** Single line on an invoice. amount_inr is rupees as the admin typed; the total in paise is the authoritative charge amount. */
+export type InvoiceLineItem = {
+  description: string;
+  amount_inr: number;
+};
+
 /** Custom-move resource selections persisted on bookings.custom_resources. */
 export type CustomResources = {
   workers: number;
@@ -645,6 +654,63 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['contact_submissions']['Insert']>;
         Relationships: [];
       };
+      app_settings: {
+        Row: {
+          key: string;
+          value: unknown;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value: unknown;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['app_settings']['Insert']>;
+        Relationships: [];
+      };
+      invoices: {
+        Row: {
+          id: string;
+          booking_id: string;
+          amount_paise: number;
+          line_items: InvoiceLineItem[];
+          notes: string | null;
+          status: InvoiceStatus;
+          payment_token: string;
+          razorpay_order_id: string | null;
+          razorpay_payment_id: string | null;
+          sent_at: string | null;
+          paid_at: string | null;
+          received_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          booking_id: string;
+          amount_paise: number;
+          line_items?: InvoiceLineItem[];
+          notes?: string | null;
+          status?: InvoiceStatus;
+          payment_token: string;
+          razorpay_order_id?: string | null;
+          razorpay_payment_id?: string | null;
+          sent_at?: string | null;
+          paid_at?: string | null;
+          received_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['invoices']['Insert']>;
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_booking_id_fkey';
+            columns: ['booking_id'];
+            referencedRelation: 'bookings';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -682,3 +748,5 @@ export type ContactSubmission =
   Database['public']['Tables']['contact_submissions']['Row'];
 export type EmailOtp = Database['public']['Tables']['email_otps']['Row'];
 export type PaymentOrder = Database['public']['Tables']['payment_orders']['Row'];
+export type AppSetting = Database['public']['Tables']['app_settings']['Row'];
+export type Invoice = Database['public']['Tables']['invoices']['Row'];
