@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getWebhookSecret, verifyWebhookSignature } from '@/lib/razorpay';
 import { confirmPaidOrder } from '@/lib/paymentsServer';
 import { failedEventOutcome } from '@/lib/paymentsPolicy';
+import { markInvoicePaidByOrder } from '@/lib/invoicesServer';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -69,17 +70,30 @@ export async function POST(req: NextRequest) {
 
   if (event === 'payment.captured' && payload.payment) {
     const { id: paymentId, order_id: orderId } = payload.payment.entity;
+
+    // Deposit orders (booking flow) live in payment_orders. Invoice
+    // orders live in invoices.razorpay_order_id. Both share the same
+    // event stream — try deposit first, fall through to invoice.
     const result = await confirmPaidOrder(supabase, { orderId, paymentId });
-    if (!result.ok && result.error !== 'order_not_found') {
+    if (result.ok) {
+      return NextResponse.json({
+        ok: true,
+        reference_code: result.referenceCode,
+        created: result.created,
+      });
+    }
+    if (result.error !== 'order_not_found') {
       // Transient failure (e.g. DB hiccup): non-2xx makes Razorpay retry.
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
-    return NextResponse.json({
-      ok: true,
-      ...(result.ok
-        ? { reference_code: result.referenceCode, created: result.created }
-        : { ignored: true }),
-    });
+
+    const invoice = await markInvoicePaidByOrder(supabase, { orderId, paymentId });
+    if (invoice.ok) {
+      return NextResponse.json({ ok: true, invoice_paid: invoice.created });
+    }
+
+    // Neither path knew this order id. Razorpay is satisfied with a 2xx.
+    return NextResponse.json({ ok: true, ignored: true });
   }
 
   if (event === 'payment.failed' && payload.payment) {
