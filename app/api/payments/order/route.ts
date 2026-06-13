@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { createVerifiedBookingSchema } from '@/lib/validation';
 import { verifyVerificationToken } from '@/lib/otp';
 import { validateBookingRequest } from '@/lib/bookingServer';
-import { DEPOSIT_AMOUNT_INR, depositAmountPaise } from '@/lib/paymentsPolicy';
+import { getDepositAmountPaise } from '@/lib/appSettings';
 import { createDepositOrder, getRazorpayKeyId, paymentsEnabled } from '@/lib/razorpay';
 
 export const dynamic = 'force-dynamic';
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const amountPaise = depositAmountPaise();
+  const amountPaise = await getDepositAmountPaise(supabase);
   // Receipt: internal reference, unique, ≤ 40 chars.
   const receipt = `dep_${randomUUID().replace(/-/g, '').slice(0, 32)}`;
   const order = await createDepositOrder({
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       amount_paise: amountPaise,
       currency: 'INR',
       key_id: getRazorpayKeyId(),
-      deposit_inr: DEPOSIT_AMOUNT_INR,
+      deposit_inr: Math.round(amountPaise / 100),
     },
     { status: 201 },
   );

@@ -101,7 +101,7 @@ export function verifyWebhookSignature(
 
 /**
  * Creates the deposit order. `amountPaise` must come from
- * depositAmountPaise() — never from the client.
+ * getDepositAmountPaise() — never from the client.
  */
 export async function createDepositOrder(opts: {
   amountPaise: number;

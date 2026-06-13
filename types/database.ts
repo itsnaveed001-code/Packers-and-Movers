@@ -645,6 +645,20 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['contact_submissions']['Insert']>;
         Relationships: [];
       };
+      app_settings: {
+        Row: {
+          key: string;
+          value: unknown;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value: unknown;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['app_settings']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -682,3 +696,4 @@ export type ContactSubmission =
   Database['public']['Tables']['contact_submissions']['Row'];
 export type EmailOtp = Database['public']['Tables']['email_otps']['Row'];
 export type PaymentOrder = Database['public']['Tables']['payment_orders']['Row'];
+export type AppSetting = Database['public']['Tables']['app_settings']['Row'];

@@ -44,8 +44,7 @@ import {
 import { createHmac } from 'node:crypto';
 import {
   capturedEventOutcome,
-  DEPOSIT_AMOUNT_INR,
-  depositAmountPaise,
+  DEPOSIT_AMOUNT_PAISE_FALLBACK,
   failedEventOutcome,
   REFUND_ON_CANCEL,
   shouldRefundOnCancel,
@@ -258,12 +257,14 @@ check(
   availableCount(slotRows, '09:00', 2) === 1,
 );
 
-console.log('--- Deposit amount (server-derived) ---');
-check('deposit policy is ₹299', DEPOSIT_AMOUNT_INR === 299);
+console.log('--- Deposit amount (server-derived, DB-backed) ---');
 check(
-  'order amount = ₹299 → 29900 paise (never client-supplied)',
-  depositAmountPaise() === 29_900 &&
-    depositAmountPaise() === DEPOSIT_AMOUNT_INR * 100,
+  'deposit fallback is ₹299 (paise) when app_settings row is missing',
+  DEPOSIT_AMOUNT_PAISE_FALLBACK === 29_900,
+);
+check(
+  'fallback is always integer paise (no float math)',
+  Number.isInteger(DEPOSIT_AMOUNT_PAISE_FALLBACK),
 );
 
 console.log('--- Razorpay signature verification ---');

@@ -4,7 +4,7 @@ import { BookingFlow, type PaymentsConfig } from '@/components/booking/BookingFl
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getActiveServices } from '@/lib/queries';
 import { DEFAULT_RATE_CARD, loadRateCard, type CustomRateCard } from '@/lib/customPricing';
-import { DEPOSIT_AMOUNT_INR } from '@/lib/paymentsPolicy';
+import { getDepositAmountInr } from '@/lib/appSettings';
 import { getRazorpayKeyId, paymentsEnabled } from '@/lib/razorpay';
 import { pageMetadata } from '@/lib/seo';
 
@@ -63,17 +63,19 @@ async function getRateCard(): Promise<CustomRateCard> {
 }
 
 export default async function BookPage() {
-  const [services, availability, rateCard] = await Promise.all([
+  const [services, availability, rateCard, depositInr] = await Promise.all([
     getActiveServices(),
     getAvailability(),
     getRateCard(),
+    getDepositAmountInr(),
   ]);
 
   // Deposit flow switches on automatically once the Razorpay env vars
   // exist; until then the wizard books without payment (and the server
   // logs a warning). Only the public key id is sent to the client.
+  // The deposit amount comes from app_settings — admin-editable.
   const payments: PaymentsConfig = paymentsEnabled()
-    ? { enabled: true, keyId: getRazorpayKeyId(), depositInr: DEPOSIT_AMOUNT_INR }
+    ? { enabled: true, keyId: getRazorpayKeyId(), depositInr }
     : { enabled: false, keyId: null, depositInr: 0 };
 
   return (
